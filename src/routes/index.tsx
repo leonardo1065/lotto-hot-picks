@@ -377,6 +377,69 @@ function Index() {
 
   const rodadasComparadas = rodadas.filter((r) => comparar.includes(r.id));
 
+  // ---- cartões salvos e conferência com o resultado oficial ----
+  const salvarCartoes = () => {
+    const jogos = apostas.length ? apostas : geradas.length === 15 ? [geradas] : [];
+    if (!jogos.length) {
+      setErro("Gere ao menos um cartão para salvar.");
+      return;
+    }
+    setErro(null);
+    const novo: CartoesSalvos = {
+      id: `${Date.now()}`,
+      criadoEm: Date.now(),
+      janela: concursos.length,
+      concursoTopo: concursos[0]?.concurso,
+      jogos,
+    };
+    const lista = [novo, ...salvos].slice(0, 20);
+    persistirCartoes(lista);
+    setConferirId(novo.id);
+  };
+
+  const removerCartoes = (id: string) => {
+    persistirCartoes(salvos.filter((c) => c.id !== id));
+    setConferirId((prev) => (prev === id ? null : prev));
+  };
+
+  const buscarUm = useServerFn(buscarConcurso);
+  const numeroAlvo = concursoAlvo.trim() ? Number(concursoAlvo.trim()) : null;
+  const {
+    data: sorteioOficial,
+    isFetching: conferindo,
+    isError: erroConferencia,
+    refetch: recarregarSorteio,
+  } = useQuery<ConcursoResultado>({
+    queryKey: ["lotofacil-concurso", numeroAlvo ?? "latest"],
+    queryFn: () => buscarUm({ data: { numero: numeroAlvo } }),
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    staleTime: 0,
+  });
+
+  const cartaoConferido = salvos.find((c) => c.id === conferirId) ?? salvos[0] ?? null;
+
+  const conferencia = useMemo(() => {
+    if (!cartaoConferido || !sorteioOficial) return null;
+    const set = new Set(sorteioOficial.dezenas);
+    const linhas = cartaoConferido.jogos.map((jogo, i) => {
+      const acertadas = jogo.filter((n) => set.has(n));
+      return { indice: i + 1, jogo, acertadas, acertos: acertadas.length };
+    });
+    const faixas: Record<number, number> = { 11: 0, 12: 0, 13: 0, 14: 0, 15: 0 };
+    for (const l of linhas) if (l.acertos >= 11) faixas[l.acertos] += 1;
+    const premiados = FAIXAS.reduce((a, f) => a + faixas[f], 0);
+    return {
+      linhas: [...linhas].sort((a, b) => b.acertos - a.acertos),
+      faixas,
+      premiados,
+      melhor: Math.max(...linhas.map((l) => l.acertos)),
+      media: linhas.reduce((a, l) => a + l.acertos, 0) / linhas.length,
+    };
+  }, [cartaoConferido, sorteioOficial]);
+
+
+
 
   const zerar = () => {
     setAtivas([]);
