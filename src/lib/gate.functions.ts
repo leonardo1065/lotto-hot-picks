@@ -4,6 +4,7 @@ import {
   abrirSessao,
   credenciaisValidas,
   exigirAcessoServidor,
+  migrarCartoes,
   salvarCredenciais,
   senhaAtualConfere,
   usuarioDaSessao,
