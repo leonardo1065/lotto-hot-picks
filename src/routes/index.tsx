@@ -476,11 +476,33 @@ function Index() {
       {apostas.length > 0 && (
         <section className="mt-6 rounded-2xl border border-accent/40 bg-card p-5 shadow-panel">
           <h2 className="font-display text-2xl tracking-wide">
-            {apostas.length} apostas geradas
+            {apostas.length} {apostas.length === 1 ? "cartão gerado" : "cartões gerados"}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Baseadas no ranking dos últimos {concursos.length} concursos · todas diferentes entre si
+            Baseados no ranking dos últimos {concursos.length} concursos · todos diferentes entre si
           </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-[11px] text-muted-foreground">Cartões</p>
+              <p className="font-display text-2xl tracking-wide">{apostas.length}</p>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-[11px] text-muted-foreground">Dezenas por cartão</p>
+              <p className="font-display text-2xl tracking-wide">15</p>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-[11px] text-muted-foreground">Dezenas diferentes usadas</p>
+              <p className="font-display text-2xl tracking-wide">
+                {new Set(apostas.flat()).size}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-[11px] text-muted-foreground">Custo estimado</p>
+              <p className="font-display text-2xl tracking-wide">
+                R$ {(apostas.length * PRECO_CARTAO).toFixed(2).replace(".", ",")}
+              </p>
+            </div>
+          </div>
           <ul className="mt-4 space-y-4">
             {apostas.map((jogo, i) => {
               const pares = jogo.filter((n) => n % 2 === 0).length;
