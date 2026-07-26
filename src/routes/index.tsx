@@ -45,6 +45,22 @@ const PREMIO_MEDIO: Record<number, string> = {
   11: "~R$ 6",
 };
 
+const STORAGE_RODADAS = "lotofacil:rodadas";
+
+type Rodada = {
+  id: string;
+  criadaEm: number;
+  janela: number;
+  concursoTopo?: number;
+  cartoes: number;
+  dezenasAtivas: number;
+  jogos: number[][];
+  media: number;
+  premiados: number;
+  faixas: Record<number, number>;
+  sorteios: number;
+};
+
 
 // sorteio ponderado: quanto mais a dezena saiu nos concursos, maior a chance
 function sortearPonderado(pool: { n: number; peso: number }[], qtd: number) {
