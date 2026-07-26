@@ -42,6 +42,16 @@ const TODAS = Array.from({ length: 25 }, (_, i) => i + 1);
 const OPCOES = [10, 20, 30, 50, 100];
 const OPCOES_APOSTAS = [3, 5, 10, 15, 20];
 const PRECO_CARTAO = 3.5; // valor da aposta simples de 15 dezenas
+
+function formatarDataHora(ms: number) {
+  return new Date(ms).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 const PRIMOS = [2, 3, 5, 7, 11, 13, 17, 19, 23];
 const FAIXAS = [15, 14, 13, 12, 11];
 const PREMIO_MEDIO: Record<number, string> = {
