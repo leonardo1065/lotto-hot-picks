@@ -326,8 +326,97 @@ function Index() {
           </button>
         </div>
 
+        <div className="mt-6 rounded-xl border border-border p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-display text-xl tracking-wide">Gerar várias apostas</h3>
+            <span className="text-xs text-muted-foreground">
+              8 quentes · 5 mornas · 2 frias, sorteadas por peso do ranking
+            </span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {OPCOES_APOSTAS.map((op) => (
+              <button
+                key={op}
+                onClick={() => setQtdApostas(op)}
+                className={`rounded-full border px-4 py-2 font-display text-lg tracking-wide transition-colors ${
+                  qtdApostas === op
+                    ? "border-accent bg-accent text-accent-foreground"
+                    : "border-border bg-secondary text-secondary-foreground hover:border-accent"
+                }`}
+              >
+                {op}
+              </button>
+            ))}
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={qtdApostas}
+              onChange={(e) =>
+                setQtdApostas(Math.max(1, Math.min(30, Number(e.target.value) || 1)))
+              }
+              className="w-24 rounded-full border border-border bg-input px-4 py-2 text-center font-display text-lg tracking-wide outline-none focus:border-accent"
+              aria-label="Quantidade de apostas"
+            />
+            <button
+              onClick={gerarApostas}
+              disabled={isFetching}
+              className="rounded-full bg-accent px-6 py-2.5 font-display text-lg tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+            >
+              Gerar {qtdApostas} apostas
+            </button>
+            {apostas.length > 0 && (
+              <button
+                onClick={() => setApostas([])}
+                className="rounded-full border border-border px-4 py-2.5 font-display text-lg tracking-wide text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
+              >
+                Limpar
+              </button>
+            )}
+          </div>
+        </div>
+
         {erro && <p className="mt-4 text-sm text-destructive">{erro}</p>}
       </section>
+
+      {apostas.length > 0 && (
+        <section className="mt-6 rounded-2xl border border-accent/40 bg-card p-5 shadow-panel">
+          <h2 className="font-display text-2xl tracking-wide">
+            {apostas.length} apostas geradas
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Baseadas no ranking dos últimos {concursos.length} concursos · todas diferentes entre si
+          </p>
+          <ul className="mt-4 space-y-4">
+            {apostas.map((jogo, i) => {
+              const pares = jogo.filter((n) => n % 2 === 0).length;
+              const primos = jogo.filter((n) => PRIMOS.includes(n)).length;
+              const soma = jogo.reduce((a, b) => a + b, 0);
+              return (
+                <li key={jogo.join("-")} className="rounded-xl border border-border p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-display text-lg tracking-wide">Aposta {i + 1}</span>
+                    <span className="text-xs text-muted-foreground">
+                      soma {soma} · {pares} pares / {15 - pares} ímpares · {primos} primos
+                    </span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-5 gap-2 sm:grid-cols-8">
+                    {jogo.map((n) => (
+                      <div
+                        key={n}
+                        className="ball-base w-full border border-accent/40 bg-secondary text-xl text-foreground"
+                      >
+                        {String(n).padStart(2, "0")}
+                      </div>
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
 
       {geradas.length > 0 && (
         <section className="mt-6 rounded-2xl border border-primary/40 bg-card p-5 shadow-panel">
