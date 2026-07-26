@@ -62,8 +62,8 @@ function RelogioLocal() {
   }, []);
 
   return (
-    <div className="rounded-2xl border border-border bg-card/60 px-4 py-3 text-right">
-      <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Data e hora local</p>
+    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-2xl border border-primary/40 bg-card/70 px-4 py-3">
+      <p className="w-full text-[10px] uppercase tracking-[0.25em] text-accent">Data e hora local</p>
       <p className="font-display text-2xl leading-tight tracking-wide tabular-nums">
         {agora
           ? agora.toLocaleTimeString("pt-BR", {
