@@ -412,29 +412,41 @@ function Index() {
   const rodadasComparadas = rodadas.filter((r) => comparar.includes(r.id));
 
   // ---- cartões salvos e conferência com o resultado oficial ----
-  const salvarCartoes = () => {
+  const salvarCartoes = async () => {
     const jogos = apostas.length ? apostas : geradas.length === 15 ? [geradas] : [];
     if (!jogos.length) {
       setErro("Gere ao menos um cartão para salvar.");
       return;
     }
     setErro(null);
-    const novo: CartoesSalvos = {
-      id: `${Date.now()}`,
-      criadoEm: Date.now(),
-      janela: concursos.length,
-      concursoTopo: concursos[0]?.concurso,
-      jogos,
-    };
-    const lista = [novo, ...salvos].slice(0, 20);
-    persistirCartoes(lista);
-    setConferirId(novo.id);
+    setSalvandoCartoes(true);
+    try {
+      const novo = await salvarNuvem({
+        data: {
+          janela: concursos.length,
+          concursoTopo: concursos[0]?.concurso ?? null,
+          jogos,
+        },
+      });
+      await recarregarSalvos();
+      setConferirId(novo.id);
+    } catch {
+      setErro("Não foi possível salvar os cartões na nuvem. Tente de novo.");
+    } finally {
+      setSalvandoCartoes(false);
+    }
   };
 
-  const removerCartoes = (id: string) => {
-    persistirCartoes(salvos.filter((c) => c.id !== id));
-    setConferirId((prev) => (prev === id ? null : prev));
+  const removerCartoes = async (id: string) => {
+    try {
+      await removerNuvem({ data: { id } });
+      await recarregarSalvos();
+      setConferirId((prev) => (prev === id ? null : prev));
+    } catch {
+      setErro("Não foi possível remover este lote.");
+    }
   };
+
 
   const buscarUm = useServerFn(buscarConcurso);
   const numeroAlvo = concursoAlvo.trim() ? Number(concursoAlvo.trim()) : null;
