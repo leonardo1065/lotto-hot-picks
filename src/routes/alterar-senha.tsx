@@ -59,7 +59,7 @@ function AlterarSenha() {
       });
       if (res.ok) {
         setOk(true);
-        e.currentTarget.reset();
+        formEl.reset();
         await router.invalidate();
       } else {
         setErro(res.erro ?? "Não foi possível alterar as credenciais.");
