@@ -52,6 +52,40 @@ function formatarDataHora(ms: number) {
     minute: "2-digit",
   });
 }
+
+function RelogioLocal() {
+  const [agora, setAgora] = useState<Date | null>(null);
+  useEffect(() => {
+    setAgora(new Date());
+    const id = setInterval(() => setAgora(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="rounded-2xl border border-border bg-card/60 px-4 py-3 text-right">
+      <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Data e hora local</p>
+      <p className="font-display text-2xl leading-tight tracking-wide tabular-nums">
+        {agora
+          ? agora.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })
+          : "--:--:--"}
+      </p>
+      <p className="text-xs capitalize text-muted-foreground">
+        {agora
+          ? agora.toLocaleDateString("pt-BR", {
+              weekday: "long",
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })
+          : "—"}
+      </p>
+    </div>
+  );
+}
 const PRIMOS = [2, 3, 5, 7, 11, 13, 17, 19, 23];
 const FAIXAS = [15, 14, 13, 12, 11];
 const PREMIO_MEDIO: Record<number, string> = {
@@ -535,6 +569,9 @@ function Index() {
               Sair
             </button>
           </div>
+        </div>
+        <div className="mt-4">
+          <RelogioLocal />
         </div>
         <h1 className="font-display text-5xl leading-none tracking-wide sm:text-6xl">
           Gerador de 15 dezenas
