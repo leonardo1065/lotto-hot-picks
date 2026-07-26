@@ -263,6 +263,20 @@ function Index() {
     };
   }, [apostas, geradas, concursos]);
 
+  // top 3 cartões: score histórico ponderado pelas faixas de premiação + média de acertos
+  const melhores = useMemo(() => {
+    if (!simulacao || simulacao.usandoJogoUnico || simulacao.porAposta.length < 2) return null;
+    const PESO: Record<number, number> = { 11: 1, 12: 6, 13: 40, 14: 300, 15: 2000 };
+    return simulacao.porAposta
+      .map((r, i) => ({
+        ...r,
+        indice: i + 1,
+        score: FAIXAS.reduce((a, f) => a + r.faixas[f] * PESO[f], 0) + r.media * 2,
+      }))
+      .sort((a, b) => b.score - a.score || b.media - a.media)
+      .slice(0, 3);
+  }, [simulacao]);
+
   const zerar = () => {
     setAtivas([]);
     setGeradas([]);
@@ -439,10 +453,10 @@ function Index() {
             <input
               type="number"
               min={1}
-              max={30}
+              max={100}
               value={qtdApostas}
               onChange={(e) =>
-                setQtdApostas(Math.max(1, Math.min(30, Number(e.target.value) || 1)))
+                setQtdApostas(Math.max(1, Math.min(100, Number(e.target.value) || 1)))
               }
               className="w-24 rounded-full border border-border bg-input px-4 py-2 text-center font-display text-lg tracking-wide outline-none focus:border-accent"
               aria-label="Quantidade de apostas"
@@ -535,6 +549,57 @@ function Index() {
           </ul>
         </section>
       )}
+
+      {melhores && (
+        <section className="mt-6 rounded-2xl border border-accent/60 bg-card p-5 shadow-panel">
+          <h2 className="font-display text-2xl tracking-wide">Os 3 melhores cartões</h2>
+          <p className="text-xs text-muted-foreground">
+            Escolhidos entre os {apostas.length} cartões gerados, por desempenho nos{" "}
+            {concursos.length} concursos analisados (faixas de 11 a 15 acertos com peso maior para
+            as premiações altas).
+          </p>
+          <ol className="mt-4 space-y-4">
+            {melhores.map((r, pos) => (
+              <li
+                key={r.jogo.join("-")}
+                className="rounded-xl border border-accent/40 bg-secondary/30 p-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-display text-lg tracking-wide text-accent">
+                    {pos + 1}º · Cartão {r.indice}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    média {r.media.toFixed(2)} · melhor {r.melhor} acertos · {r.premiados} vezes
+                    premiado
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-5 gap-2 sm:grid-cols-8">
+                  {r.jogo.map((n) => (
+                    <div
+                      key={n}
+                      className="ball-base w-full border border-accent bg-accent/15 text-xl text-foreground"
+                    >
+                      {String(n).padStart(2, "0")}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                  {FAIXAS.map((f) => (
+                    <span key={f}>
+                      {f} pts: <strong className="text-foreground">{r.faixas[f]}</strong>
+                    </span>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Critério retrospectivo: são os cartões que teriam rendido mais nos concursos usados. Não
+            garante acerto futuro.
+          </p>
+        </section>
+      )}
+
 
       {simulacao && (
         <section className="mt-6 rounded-2xl border border-primary/40 bg-card p-5 shadow-panel">
