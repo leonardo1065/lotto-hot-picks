@@ -14,7 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_credenciais: {
+        Row: {
+          atualizado_em: string
+          id: string
+          senha_hash: string
+          senha_salt: string
+          usuario: string
+        }
+        Insert: {
+          atualizado_em?: string
+          id?: string
+          senha_hash: string
+          senha_salt: string
+          usuario: string
+        }
+        Update: {
+          atualizado_em?: string
+          id?: string
+          senha_hash?: string
+          senha_salt?: string
+          usuario?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
