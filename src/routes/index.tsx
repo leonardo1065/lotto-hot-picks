@@ -62,13 +62,8 @@ type Rodada = {
   sorteios: number;
 };
 
-type CartoesSalvos = {
-  id: string;
-  criadoEm: number;
-  janela: number;
-  concursoTopo?: number;
-  jogos: number[][];
-};
+type CartoesSalvos = LoteCartoes;
+
 
 
 // sorteio ponderado: quanto mais a dezena saiu nos concursos, maior a chance
