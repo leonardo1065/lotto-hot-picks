@@ -315,6 +315,44 @@ function Index() {
       .slice(0, 3);
   }, [simulacao]);
 
+  const salvarRodada = () => {
+    if (!simulacao) {
+      setErro("Gere ao menos um cartão para salvar a rodada.");
+      return;
+    }
+    setErro(null);
+    const faixas: Record<number, number> = { 11: 0, 12: 0, 13: 0, 14: 0, 15: 0 };
+    for (const f of FAIXAS) faixas[f] = simulacao.geral[f];
+    const nova: Rodada = {
+      id: `${Date.now()}`,
+      criadaEm: Date.now(),
+      janela: concursos.length,
+      concursoTopo: concursos[0]?.concurso,
+      cartoes: simulacao.porAposta.length,
+      dezenasAtivas: ativas.length,
+      jogos: simulacao.porAposta.map((r) => r.jogo),
+      media: simulacao.mediaGeral,
+      premiados: FAIXAS.reduce((a, f) => a + faixas[f], 0),
+      faixas,
+      sorteios: simulacao.sorteios,
+    };
+    persistir([nova, ...rodadas].slice(0, 12));
+    setComparar((prev) => [nova.id, ...prev].slice(0, 3));
+  };
+
+  const alternarComparacao = (id: string) =>
+    setComparar((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id].slice(-3),
+    );
+
+  const removerRodada = (id: string) => {
+    persistir(rodadas.filter((r) => r.id !== id));
+    setComparar((prev) => prev.filter((x) => x !== id));
+  };
+
+  const rodadasComparadas = rodadas.filter((r) => comparar.includes(r.id));
+
+
   const zerar = () => {
     setAtivas([]);
     setGeradas([]);
