@@ -772,18 +772,23 @@ function Index() {
       <section className="mt-6 rounded-2xl border border-accent/60 bg-card p-5 shadow-panel">
         <h2 className="font-display text-2xl tracking-wide">Conferir cartões com o resultado</h2>
         <p className="text-xs text-muted-foreground">
-          Salve os cartões gerados e confira com o último concurso da Caixa ou com um concurso
-          específico.
+          Os cartões ficam salvos na nuvem da sua conta — dá para conferir de qualquer dispositivo,
+          com o último concurso da Caixa ou um concurso específico.
+          {carregandoSalvos ? " Carregando seus cartões..." : ""}
         </p>
 
         {(apostas.length > 0 || geradas.length === 15) && (
           <button
             onClick={salvarCartoes}
-            className="mt-4 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5"
+            disabled={salvandoCartoes}
+            className="mt-4 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
           >
-            Salvar cartões gerados agora ({apostas.length || 1})
+            {salvandoCartoes
+              ? "Salvando na nuvem..."
+              : `Salvar cartões gerados agora (${apostas.length || 1})`}
           </button>
         )}
+
 
 
 
