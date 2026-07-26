@@ -449,7 +449,7 @@ function Index() {
               disabled={isFetching}
               className="rounded-full bg-accent px-6 py-2.5 font-display text-lg tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
             >
-              Gerar {qtdApostas} apostas
+              Gerar {qtdApostas} {qtdApostas === 1 ? "cartão" : "cartões"}
             </button>
             {apostas.length > 0 && (
               <button
@@ -460,6 +460,14 @@ function Index() {
               </button>
             )}
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {qtdApostas} {qtdApostas === 1 ? "cartão" : "cartões"} × 15 dezenas ={" "}
+            {qtdApostas * 15} dezenas marcadas · custo estimado{" "}
+            <strong className="text-foreground">
+              R$ {(qtdApostas * PRECO_CARTAO).toFixed(2).replace(".", ",")}
+            </strong>{" "}
+            (aposta simples de R$ 3,50)
+          </p>
         </div>
 
         {erro && <p className="mt-4 text-sm text-destructive">{erro}</p>}
