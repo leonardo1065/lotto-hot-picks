@@ -46,6 +46,7 @@ const PREMIO_MEDIO: Record<number, string> = {
 };
 
 const STORAGE_RODADAS = "lotofacil:rodadas";
+const STORAGE_CARTOES = "lotofacil:cartoes";
 
 type Rodada = {
   id: string;
@@ -59,6 +60,14 @@ type Rodada = {
   premiados: number;
   faixas: Record<number, number>;
   sorteios: number;
+};
+
+type CartoesSalvos = {
+  id: string;
+  criadoEm: number;
+  janela: number;
+  concursoTopo?: number;
+  jogos: number[][];
 };
 
 
