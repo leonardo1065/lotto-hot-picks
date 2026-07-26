@@ -151,6 +151,55 @@ function Index() {
     setGeradas(top);
   };
 
+  const gerarApostas = () => {
+    if (ativas.length < 15) {
+      setErro("Selecione ao menos 15 dezenas no painel para gerar as apostas.");
+      return;
+    }
+    if (!concursos.length) {
+      setErro("Aguarde o carregamento dos concursos da Caixa.");
+      return;
+    }
+    setErro(null);
+    const permitidas = new Set(ativas);
+    const poolDe = (lista: { n: number; freq: number }[]) =>
+      lista
+        .filter((r) => permitidas.has(r.n))
+        .map((r) => ({ n: r.n, peso: r.freq + 1 }));
+
+    const poolQuentes = poolDe(quentes);
+    const poolMornas = poolDe(mornas);
+    const poolFrias = poolDe(frias);
+    const poolTodas = poolDe(ranking);
+
+    const vistas = new Set<string>();
+    const novas: number[][] = [];
+    let tentativas = 0;
+
+    while (novas.length < qtdApostas && tentativas < qtdApostas * 60) {
+      tentativas++;
+      const jogo = new Set<number>([
+        ...sortearPonderado(poolQuentes, Math.min(8, poolQuentes.length)),
+        ...sortearPonderado(poolMornas, Math.min(5, poolMornas.length)),
+        ...sortearPonderado(poolFrias, Math.min(2, poolFrias.length)),
+      ]);
+      for (const p of sortearPonderado(poolTodas, poolTodas.length)) {
+        if (jogo.size >= 15) break;
+        jogo.add(p);
+      }
+      if (jogo.size < 15) break;
+      const lista = [...jogo].slice(0, 15).sort((a, b) => a - b);
+      const chave = lista.join("-");
+      if (vistas.has(chave)) continue;
+      vistas.add(chave);
+      novas.push(lista);
+    }
+
+    setApostas(novas);
+  };
+
+
+
   const zerar = () => {
     setAtivas([]);
     setGeradas([]);
