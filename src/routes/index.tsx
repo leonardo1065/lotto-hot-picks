@@ -4,6 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { buscarConcursos, buscarConcurso, type ConcursoResultado } from "@/lib/lotofacil.functions";
 import { exigirAcesso, sair } from "@/lib/gate.functions";
+import {
+  listarCartoes,
+  salvarCartoesNuvem,
+  removerCartoesNuvem,
+  type LoteCartoes,
+} from "@/lib/cartoes.functions";
+
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
