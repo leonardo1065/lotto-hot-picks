@@ -35,3 +35,16 @@ export const buscarConcursos = createServerFn({ method: "GET" })
 
     return resultados.filter((r): r is ConcursoResultado => r !== null);
   });
+
+export const buscarConcurso = createServerFn({ method: "GET" })
+  .inputValidator((data: { numero?: number | null }) => ({
+    numero: data?.numero ? Math.max(1, Math.floor(Number(data.numero))) : null,
+  }))
+  .handler(async ({ data }): Promise<ConcursoResultado> => {
+    const alvo = data.numero ? String(data.numero) : "latest";
+    const res = await fetch(`${API}/${alvo}`);
+    if (!res.ok) throw new Error("Concurso não encontrado na Caixa.");
+    const json = (await res.json()) as { concurso: number; data: string; dezenas: string[] };
+    if (!json?.dezenas) throw new Error("Concurso não encontrado na Caixa.");
+    return { concurso: json.concurso, data: json.data, dezenas: json.dezenas.map(Number) };
+  });
