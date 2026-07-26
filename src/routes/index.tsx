@@ -28,13 +28,39 @@ export const Route = createFileRoute("/")({
 
 const TODAS = Array.from({ length: 25 }, (_, i) => i + 1);
 const OPCOES = [10, 20, 30, 50, 100];
+const OPCOES_APOSTAS = [3, 5, 8, 10];
+const PRIMOS = [2, 3, 5, 7, 11, 13, 17, 19, 23];
+
+// sorteio ponderado: quanto mais a dezena saiu nos concursos, maior a chance
+function sortearPonderado(pool: { n: number; peso: number }[], qtd: number) {
+  const restantes = pool.map((p) => ({ ...p }));
+  const escolhidas: number[] = [];
+  while (escolhidas.length < qtd && restantes.length) {
+    const total = restantes.reduce((a, b) => a + b.peso, 0);
+    let alvo = Math.random() * total;
+    let idx = restantes.length - 1;
+    for (let i = 0; i < restantes.length; i++) {
+      alvo -= restantes[i].peso;
+      if (alvo <= 0) {
+        idx = i;
+        break;
+      }
+    }
+    escolhidas.push(restantes[idx].n);
+    restantes.splice(idx, 1);
+  }
+  return escolhidas;
+}
 
 function Index() {
   const buscar = useServerFn(buscarConcursos);
   const [quantidade, setQuantidade] = useState(20);
   const [ativas, setAtivas] = useState<number[]>(TODAS);
   const [geradas, setGeradas] = useState<number[]>([]);
+  const [qtdApostas, setQtdApostas] = useState(5);
+  const [apostas, setApostas] = useState<number[][]>([]);
   const [erro, setErro] = useState<string | null>(null);
+
 
   const {
     data: concursos = [],
@@ -125,10 +151,62 @@ function Index() {
     setGeradas(top);
   };
 
+  const gerarApostas = () => {
+    if (ativas.length < 15) {
+      setErro("Selecione ao menos 15 dezenas no painel para gerar as apostas.");
+      return;
+    }
+    if (!concursos.length) {
+      setErro("Aguarde o carregamento dos concursos da Caixa.");
+      return;
+    }
+    setErro(null);
+    const permitidas = new Set(ativas);
+    const poolDe = (lista: { n: number; freq: number }[]) =>
+      lista
+        .filter((r) => permitidas.has(r.n))
+        .map((r) => ({ n: r.n, peso: r.freq + 1 }));
+
+    const poolQuentes = poolDe(quentes);
+    const poolMornas = poolDe(mornas);
+    const poolFrias = poolDe(frias);
+    const poolTodas = poolDe(ranking);
+
+    const vistas = new Set<string>();
+    const novas: number[][] = [];
+    let tentativas = 0;
+
+    while (novas.length < qtdApostas && tentativas < qtdApostas * 60) {
+      tentativas++;
+      const jogo = new Set<number>([
+        ...sortearPonderado(poolQuentes, Math.min(8, poolQuentes.length)),
+        ...sortearPonderado(poolMornas, Math.min(5, poolMornas.length)),
+        ...sortearPonderado(poolFrias, Math.min(2, poolFrias.length)),
+      ]);
+      for (const p of sortearPonderado(poolTodas, poolTodas.length)) {
+        if (jogo.size >= 15) break;
+        jogo.add(p);
+      }
+      if (jogo.size < 15) break;
+      const lista = [...jogo].slice(0, 15).sort((a, b) => a - b);
+      const chave = lista.join("-");
+      if (vistas.has(chave)) continue;
+      vistas.add(chave);
+      novas.push(lista);
+    }
+
+    setApostas(novas);
+  };
+
+
+
+
   const zerar = () => {
     setAtivas([]);
     setGeradas([]);
+    setApostas([]);
   };
+
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10">
@@ -248,8 +326,97 @@ function Index() {
           </button>
         </div>
 
+        <div className="mt-6 rounded-xl border border-border p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-display text-xl tracking-wide">Gerar várias apostas</h3>
+            <span className="text-xs text-muted-foreground">
+              8 quentes · 5 mornas · 2 frias, sorteadas por peso do ranking
+            </span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {OPCOES_APOSTAS.map((op) => (
+              <button
+                key={op}
+                onClick={() => setQtdApostas(op)}
+                className={`rounded-full border px-4 py-2 font-display text-lg tracking-wide transition-colors ${
+                  qtdApostas === op
+                    ? "border-accent bg-accent text-accent-foreground"
+                    : "border-border bg-secondary text-secondary-foreground hover:border-accent"
+                }`}
+              >
+                {op}
+              </button>
+            ))}
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={qtdApostas}
+              onChange={(e) =>
+                setQtdApostas(Math.max(1, Math.min(30, Number(e.target.value) || 1)))
+              }
+              className="w-24 rounded-full border border-border bg-input px-4 py-2 text-center font-display text-lg tracking-wide outline-none focus:border-accent"
+              aria-label="Quantidade de apostas"
+            />
+            <button
+              onClick={gerarApostas}
+              disabled={isFetching}
+              className="rounded-full bg-accent px-6 py-2.5 font-display text-lg tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+            >
+              Gerar {qtdApostas} apostas
+            </button>
+            {apostas.length > 0 && (
+              <button
+                onClick={() => setApostas([])}
+                className="rounded-full border border-border px-4 py-2.5 font-display text-lg tracking-wide text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
+              >
+                Limpar
+              </button>
+            )}
+          </div>
+        </div>
+
         {erro && <p className="mt-4 text-sm text-destructive">{erro}</p>}
       </section>
+
+      {apostas.length > 0 && (
+        <section className="mt-6 rounded-2xl border border-accent/40 bg-card p-5 shadow-panel">
+          <h2 className="font-display text-2xl tracking-wide">
+            {apostas.length} apostas geradas
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Baseadas no ranking dos últimos {concursos.length} concursos · todas diferentes entre si
+          </p>
+          <ul className="mt-4 space-y-4">
+            {apostas.map((jogo, i) => {
+              const pares = jogo.filter((n) => n % 2 === 0).length;
+              const primos = jogo.filter((n) => PRIMOS.includes(n)).length;
+              const soma = jogo.reduce((a, b) => a + b, 0);
+              return (
+                <li key={jogo.join("-")} className="rounded-xl border border-border p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-display text-lg tracking-wide">Aposta {i + 1}</span>
+                    <span className="text-xs text-muted-foreground">
+                      soma {soma} · {pares} pares / {15 - pares} ímpares · {primos} primos
+                    </span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-5 gap-2 sm:grid-cols-8">
+                    {jogo.map((n) => (
+                      <div
+                        key={n}
+                        className="ball-base w-full border border-accent/40 bg-secondary text-xl text-foreground"
+                      >
+                        {String(n).padStart(2, "0")}
+                      </div>
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
 
       {geradas.length > 0 && (
         <section className="mt-6 rounded-2xl border border-primary/40 bg-card p-5 shadow-panel">
