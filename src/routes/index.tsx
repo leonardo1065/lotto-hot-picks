@@ -490,6 +490,94 @@ function Index() {
         </section>
       )}
 
+      {simulacao && (
+        <section className="mt-6 rounded-2xl border border-primary/40 bg-card p-5 shadow-panel">
+          <h2 className="font-display text-2xl tracking-wide">Simulação de desempenho</h2>
+          <p className="text-xs text-muted-foreground">
+            {simulacao.usandoJogoUnico
+              ? "Jogo gerado"
+              : `${simulacao.porAposta.length} apostas`}{" "}
+            conferidas contra os {concursos.length} concursos analisados ·{" "}
+            {simulacao.sorteios} conferências
+          </p>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {FAIXAS.map((f) => {
+              const qtd = simulacao.geral[f];
+              const perc = (qtd / simulacao.sorteios) * 100;
+              return (
+                <div key={f} className="rounded-xl border border-border p-3">
+                  <p className="font-display text-xl tracking-wide">{f} acertos</p>
+                  <p className="text-2xl font-semibold">{qtd}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {perc.toFixed(1)}% · {PREMIO_MEDIO[f]}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="mt-4 text-sm text-muted-foreground">
+            Média de acertos por conferência:{" "}
+            <strong className="text-foreground">{simulacao.mediaGeral.toFixed(2)}</strong> · a cada
+            100 apostas jogadas nesses concursos, a estimativa é de{" "}
+            <strong className="text-foreground">
+              {((simulacao.geral[11] +
+                simulacao.geral[12] +
+                simulacao.geral[13] +
+                simulacao.geral[14] +
+                simulacao.geral[15]) /
+                simulacao.sorteios *
+                100).toFixed(1)}
+            </strong>{" "}
+            jogos premiados (11+ acertos).
+          </p>
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground">
+                  <th className="py-2">Aposta</th>
+                  {FAIXAS.map((f) => (
+                    <th key={f} className="py-2 text-center">
+                      {f}
+                    </th>
+                  ))}
+                  <th className="py-2 text-center">Média</th>
+                  <th className="py-2 text-center">Melhor</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {simulacao.porAposta.map((r, i) => (
+                  <tr key={r.jogo.join("-")}>
+                    <td className="py-2 font-display tracking-wide">
+                      {simulacao.usandoJogoUnico ? "Jogo gerado" : `Aposta ${i + 1}`}
+                    </td>
+                    {FAIXAS.map((f) => (
+                      <td
+                        key={f}
+                        className={`py-2 text-center ${
+                          r.faixas[f] > 0 ? "font-semibold text-accent" : "text-muted-foreground"
+                        }`}
+                      >
+                        {r.faixas[f]}
+                      </td>
+                    ))}
+                    <td className="py-2 text-center">{r.media.toFixed(2)}</td>
+                    <td className="py-2 text-center font-semibold">{r.melhor}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            A simulação é retrospectiva: mostra como cada aposta teria se saído nos concursos já
+            realizados. Não é previsão de resultados futuros.
+          </p>
+        </section>
+      )}
+
 
       {geradas.length > 0 && (
         <section className="mt-6 rounded-2xl border border-primary/40 bg-card p-5 shadow-panel">
