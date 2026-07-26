@@ -102,11 +102,16 @@ function Index() {
   const [erro, setErro] = useState<string | null>(null);
   const [rodadas, setRodadas] = useState<Rodada[]>([]);
   const [comparar, setComparar] = useState<string[]>([]);
+  const [salvos, setSalvos] = useState<CartoesSalvos[]>([]);
+  const [conferirId, setConferirId] = useState<string | null>(null);
+  const [concursoAlvo, setConcursoAlvo] = useState<string>("");
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_RODADAS);
       if (raw) setRodadas(JSON.parse(raw) as Rodada[]);
+      const rawC = localStorage.getItem(STORAGE_CARTOES);
+      if (rawC) setSalvos(JSON.parse(rawC) as CartoesSalvos[]);
     } catch {
       /* histórico indisponível */
     }
@@ -120,6 +125,17 @@ function Index() {
       /* ignora falha de armazenamento */
     }
   };
+
+  const persistirCartoes = (lista: CartoesSalvos[]) => {
+    setSalvos(lista);
+    try {
+      localStorage.setItem(STORAGE_CARTOES, JSON.stringify(lista));
+    } catch {
+      /* ignora falha de armazenamento */
+    }
+  };
+
+
 
 
 
