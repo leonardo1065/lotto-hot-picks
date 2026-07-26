@@ -28,13 +28,39 @@ export const Route = createFileRoute("/")({
 
 const TODAS = Array.from({ length: 25 }, (_, i) => i + 1);
 const OPCOES = [10, 20, 30, 50, 100];
+const OPCOES_APOSTAS = [3, 5, 8, 10];
+const PRIMOS = [2, 3, 5, 7, 11, 13, 17, 19, 23];
+
+// sorteio ponderado: quanto mais a dezena saiu nos concursos, maior a chance
+function sortearPonderado(pool: { n: number; peso: number }[], qtd: number) {
+  const restantes = pool.map((p) => ({ ...p }));
+  const escolhidas: number[] = [];
+  while (escolhidas.length < qtd && restantes.length) {
+    const total = restantes.reduce((a, b) => a + b.peso, 0);
+    let alvo = Math.random() * total;
+    let idx = restantes.length - 1;
+    for (let i = 0; i < restantes.length; i++) {
+      alvo -= restantes[i].peso;
+      if (alvo <= 0) {
+        idx = i;
+        break;
+      }
+    }
+    escolhidas.push(restantes[idx].n);
+    restantes.splice(idx, 1);
+  }
+  return escolhidas;
+}
 
 function Index() {
   const buscar = useServerFn(buscarConcursos);
   const [quantidade, setQuantidade] = useState(20);
   const [ativas, setAtivas] = useState<number[]>(TODAS);
   const [geradas, setGeradas] = useState<number[]>([]);
+  const [qtdApostas, setQtdApostas] = useState(5);
+  const [apostas, setApostas] = useState<number[][]>([]);
   const [erro, setErro] = useState<string | null>(null);
+
 
   const {
     data: concursos = [],
