@@ -263,6 +263,20 @@ function Index() {
     };
   }, [apostas, geradas, concursos]);
 
+  // top 3 cartões: score histórico ponderado pelas faixas de premiação + média de acertos
+  const melhores = useMemo(() => {
+    if (!simulacao || simulacao.usandoJogoUnico || simulacao.porAposta.length < 2) return null;
+    const PESO: Record<number, number> = { 11: 1, 12: 6, 13: 40, 14: 300, 15: 2000 };
+    return simulacao.porAposta
+      .map((r, i) => ({
+        ...r,
+        indice: i + 1,
+        score: FAIXAS.reduce((a, f) => a + r.faixas[f] * PESO[f], 0) + r.media * 2,
+      }))
+      .sort((a, b) => b.score - a.score || b.media - a.media)
+      .slice(0, 3);
+  }, [simulacao]);
+
   const zerar = () => {
     setAtivas([]);
     setGeradas([]);
