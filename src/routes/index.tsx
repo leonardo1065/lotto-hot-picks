@@ -2,7 +2,7 @@ import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-rout
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { buscarConcursos, type ConcursoResultado } from "@/lib/lotofacil.functions";
+import { buscarConcursos, buscarConcurso, type ConcursoResultado } from "@/lib/lotofacil.functions";
 import { exigirAcesso, sair } from "@/lib/gate.functions";
 
 export const Route = createFileRoute("/")({
