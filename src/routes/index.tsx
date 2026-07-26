@@ -278,12 +278,20 @@ function Index() {
       <header className="mb-8">
         <div className="flex items-start justify-between gap-3">
           <p className="font-display text-sm tracking-[0.35em] text-accent">LOTOFÁCIL · CAIXA</p>
-          <button
-            onClick={sairDoApp}
-            className="rounded-full border border-border px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
-          >
-            Sair
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/alterar-senha"
+              className="rounded-full border border-border px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+            >
+              Alterar senha
+            </Link>
+            <button
+              onClick={sairDoApp}
+              className="rounded-full border border-border px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
+            >
+              Sair
+            </button>
+          </div>
         </div>
         <h1 className="font-display text-5xl leading-none tracking-wide sm:text-6xl">
           Gerador de 15 dezenas
