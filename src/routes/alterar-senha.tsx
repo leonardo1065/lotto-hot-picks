@@ -34,7 +34,8 @@ function AlterarSenha() {
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
+    const formEl = e.currentTarget;
+    const form = new FormData(formEl);
     const novaSenha = String(form.get("novaSenha") ?? "");
     const confirmar = String(form.get("confirmar") ?? "");
     setOk(false);
