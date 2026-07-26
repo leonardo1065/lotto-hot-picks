@@ -6,6 +6,7 @@ import {
   exigirAcessoServidor,
   salvarCredenciais,
   senhaAtualConfere,
+  usuarioDaSessao,
 } from "./gate.server";
 
 export const entrar = createServerFn({ method: "POST" })
@@ -26,8 +27,8 @@ export const sair = createServerFn({ method: "POST" }).handler(async () => {
 });
 
 export const exigirAcesso = createServerFn({ method: "GET" }).handler(async () => {
-  const usuario = await exigirAcessoServidor();
-  return { usuario };
+  const usuario = await usuarioDaSessao();
+  return { autorizado: usuario !== null, usuario: usuario ?? "" };
 });
 
 const alterarSchema = z.object({

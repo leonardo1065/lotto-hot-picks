@@ -1,5 +1,4 @@
 import { useSession } from "@tanstack/react-start/server";
-import { redirect } from "@tanstack/react-router";
 import { createHash, timingSafeEqual } from "node:crypto";
 
 export type GateSession = { unlocked?: boolean; user?: string };
@@ -93,8 +92,15 @@ export async function abrirSessao() {
   return useSession<GateSession>(sessionConfig());
 }
 
-export async function exigirAcessoServidor() {
+/** Retorna o usuário logado ou null — nunca lança Response. */
+export async function usuarioDaSessao(): Promise<string | null> {
   const session = await abrirSessao();
-  if (!session.data.unlocked) throw redirect({ to: "/login" });
+  if (!session.data.unlocked) return null;
   return session.data.user ?? "";
+}
+
+export async function exigirAcessoServidor() {
+  const usuario = await usuarioDaSessao();
+  if (usuario === null) throw new Error("Acesso não autorizado");
+  return usuario;
 }
