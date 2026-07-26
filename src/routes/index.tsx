@@ -570,6 +570,9 @@ function Index() {
             </button>
           </div>
         </div>
+        <div className="mt-4">
+          <RelogioLocal />
+        </div>
         <h1 className="font-display text-5xl leading-none tracking-wide sm:text-6xl">
           Gerador de 15 dezenas
         </h1>
