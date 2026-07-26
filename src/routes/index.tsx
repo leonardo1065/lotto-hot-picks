@@ -511,7 +511,7 @@ function Index() {
               return (
                 <li key={jogo.join("-")} className="rounded-xl border border-border p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-display text-lg tracking-wide">Aposta {i + 1}</span>
+                    <span className="font-display text-lg tracking-wide">Cartão {i + 1}</span>
                     <span className="text-xs text-muted-foreground">
                       soma {soma} · {pares} pares / {15 - pares} ímpares · {primos} primos
                     </span>
