@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -30,7 +30,8 @@ export const Route = createFileRoute("/")({
 
 const TODAS = Array.from({ length: 25 }, (_, i) => i + 1);
 const OPCOES = [10, 20, 30, 50, 100];
-const OPCOES_APOSTAS = [3, 5, 8, 10];
+const OPCOES_APOSTAS = [3, 5, 10, 15, 20];
+const PRECO_CARTAO = 3.5; // valor da aposta simples de 15 dezenas
 const PRIMOS = [2, 3, 5, 7, 11, 13, 17, 19, 23];
 const FAIXAS = [15, 14, 13, 12, 11];
 const PREMIO_MEDIO: Record<number, string> = {
@@ -277,12 +278,20 @@ function Index() {
       <header className="mb-8">
         <div className="flex items-start justify-between gap-3">
           <p className="font-display text-sm tracking-[0.35em] text-accent">LOTOFÁCIL · CAIXA</p>
-          <button
-            onClick={sairDoApp}
-            className="rounded-full border border-border px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
-          >
-            Sair
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/alterar-senha"
+              className="rounded-full border border-border px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+            >
+              Alterar senha
+            </Link>
+            <button
+              onClick={sairDoApp}
+              className="rounded-full border border-border px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
+            >
+              Sair
+            </button>
+          </div>
         </div>
         <h1 className="font-display text-5xl leading-none tracking-wide sm:text-6xl">
           Gerador de 15 dezenas
@@ -401,11 +410,15 @@ function Index() {
 
         <div className="mt-6 rounded-xl border border-border p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="font-display text-xl tracking-wide">Gerar várias apostas</h3>
+            <h3 className="font-display text-xl tracking-wide">Quantos cartões quer jogar?</h3>
             <span className="text-xs text-muted-foreground">
               8 quentes · 5 mornas · 2 frias, sorteadas por peso do ranking
             </span>
           </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Escolha 3, 5, 10 ou mais cartões — cada cartão é um jogo de 15 dezenas, todos
+            diferentes entre si.
+          </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {OPCOES_APOSTAS.map((op) => (
               <button
@@ -436,7 +449,7 @@ function Index() {
               disabled={isFetching}
               className="rounded-full bg-accent px-6 py-2.5 font-display text-lg tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
             >
-              Gerar {qtdApostas} apostas
+              Gerar {qtdApostas} {qtdApostas === 1 ? "cartão" : "cartões"}
             </button>
             {apostas.length > 0 && (
               <button
@@ -447,6 +460,14 @@ function Index() {
               </button>
             )}
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {qtdApostas} {qtdApostas === 1 ? "cartão" : "cartões"} × 15 dezenas ={" "}
+            {qtdApostas * 15} dezenas marcadas · custo estimado{" "}
+            <strong className="text-foreground">
+              R$ {(qtdApostas * PRECO_CARTAO).toFixed(2).replace(".", ",")}
+            </strong>{" "}
+            (aposta simples de R$ 3,50)
+          </p>
         </div>
 
         {erro && <p className="mt-4 text-sm text-destructive">{erro}</p>}
@@ -455,11 +476,33 @@ function Index() {
       {apostas.length > 0 && (
         <section className="mt-6 rounded-2xl border border-accent/40 bg-card p-5 shadow-panel">
           <h2 className="font-display text-2xl tracking-wide">
-            {apostas.length} apostas geradas
+            {apostas.length} {apostas.length === 1 ? "cartão gerado" : "cartões gerados"}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Baseadas no ranking dos últimos {concursos.length} concursos · todas diferentes entre si
+            Baseados no ranking dos últimos {concursos.length} concursos · todos diferentes entre si
           </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-[11px] text-muted-foreground">Cartões</p>
+              <p className="font-display text-2xl tracking-wide">{apostas.length}</p>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-[11px] text-muted-foreground">Dezenas por cartão</p>
+              <p className="font-display text-2xl tracking-wide">15</p>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-[11px] text-muted-foreground">Dezenas diferentes usadas</p>
+              <p className="font-display text-2xl tracking-wide">
+                {new Set(apostas.flat()).size}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-[11px] text-muted-foreground">Custo estimado</p>
+              <p className="font-display text-2xl tracking-wide">
+                R$ {(apostas.length * PRECO_CARTAO).toFixed(2).replace(".", ",")}
+              </p>
+            </div>
+          </div>
           <ul className="mt-4 space-y-4">
             {apostas.map((jogo, i) => {
               const pares = jogo.filter((n) => n % 2 === 0).length;
@@ -468,7 +511,7 @@ function Index() {
               return (
                 <li key={jogo.join("-")} className="rounded-xl border border-border p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-display text-lg tracking-wide">Aposta {i + 1}</span>
+                    <span className="font-display text-lg tracking-wide">Cartão {i + 1}</span>
                     <span className="text-xs text-muted-foreground">
                       soma {soma} · {pares} pares / {15 - pares} ímpares · {primos} primos
                     </span>
