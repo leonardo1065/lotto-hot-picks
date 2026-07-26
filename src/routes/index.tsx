@@ -200,10 +200,13 @@ function Index() {
 
 
 
+
   const zerar = () => {
     setAtivas([]);
     setGeradas([]);
+    setApostas([]);
   };
+
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10">
