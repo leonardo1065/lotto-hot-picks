@@ -101,6 +101,8 @@ function Index() {
   const [geradas, setGeradas] = useState<number[]>([]);
   const [qtdApostas, setQtdApostas] = useState(5);
   const [apostas, setApostas] = useState<number[][]>([]);
+  const [geradoEm, setGeradoEm] = useState<number | null>(null);
+  const [geradasEm, setGeradasEm] = useState<number | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [rodadas, setRodadas] = useState<Rodada[]>([]);
   const [comparar, setComparar] = useState<string[]>([]);
@@ -261,6 +263,7 @@ function Index() {
       .slice(0, 15)
       .sort((a, b) => a - b);
     setGeradas(top);
+    setGeradasEm(Date.now());
   };
 
   const gerarApostas = () => {
@@ -308,6 +311,7 @@ function Index() {
     }
 
     setApostas(novas);
+    setGeradoEm(Date.now());
   };
 
 
@@ -491,6 +495,8 @@ function Index() {
     setAtivas([]);
     setGeradas([]);
     setApostas([]);
+    setGeradoEm(null);
+    setGeradasEm(null);
   };
 
   const sairFn = useServerFn(sair);
@@ -680,7 +686,10 @@ function Index() {
             </button>
             {apostas.length > 0 && (
               <button
-                onClick={() => setApostas([])}
+                onClick={() => {
+                  setApostas([]);
+                  setGeradoEm(null);
+                }}
                 className="rounded-full border border-border px-4 py-2.5 font-display text-lg tracking-wide text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
               >
                 Limpar
@@ -708,6 +717,9 @@ function Index() {
           <p className="text-xs text-muted-foreground">
             Baseados no ranking dos últimos {concursos.length} concursos · todos diferentes entre si
           </p>
+          {geradoEm && (
+            <p className="text-xs text-accent">Gerados em {formatarDataHora(geradoEm)}</p>
+          )}
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-border p-3">
               <p className="text-[11px] text-muted-foreground">Cartões</p>
@@ -856,7 +868,7 @@ function Index() {
                     />
                     <span>
                       {c.jogos.length} {c.jogos.length === 1 ? "cartão" : "cartões"} ·{" "}
-                      {new Date(c.criadoEm).toLocaleString("pt-BR")}
+                      {formatarDataHora(c.criadoEm)}
                       {c.concursoTopo ? ` · base até #${c.concursoTopo}` : ""}
                     </span>
                   </label>
@@ -1120,7 +1132,7 @@ function Index() {
                     {r.concursoTopo ? ` (até #${r.concursoTopo})` : ""} · {r.dezenasAtivas} dezenas
                     ativas
                     <span className="block text-xs text-muted-foreground">
-                      {new Date(r.criadaEm).toLocaleString("pt-BR")} · média {r.media.toFixed(2)} ·{" "}
+                      {formatarDataHora(r.criadaEm)} · média {r.media.toFixed(2)} ·{" "}
                       {r.premiados} premiações
                     </span>
                   </span>
@@ -1194,6 +1206,9 @@ function Index() {
             Baseado em {concursos.length} concursos · até o concurso {concursos[0]?.concurso} (
             {concursos[0]?.data})
           </p>
+          {geradasEm && (
+            <p className="text-xs text-accent">Gerado em {formatarDataHora(geradasEm)}</p>
+          )}
           <div className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8">
             {geradas.map((n) => (
               <div
@@ -1298,7 +1313,10 @@ function Index() {
           </div>
 
           <button
-            onClick={() => setGeradas(sugestaoEstrategica)}
+            onClick={() => {
+              setGeradas(sugestaoEstrategica);
+              setGeradasEm(Date.now());
+            }}
             className="mt-5 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5"
           >
             Usar esta estratégia
