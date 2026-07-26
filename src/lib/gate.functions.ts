@@ -4,6 +4,7 @@ import {
   abrirSessao,
   credenciaisValidas,
   exigirAcessoServidor,
+  migrarCartoes,
   salvarCredenciais,
   senhaAtualConfere,
   usuarioDaSessao,
@@ -32,20 +33,39 @@ export const exigirAcesso = createServerFn({ method: "GET" }).handler(async () =
 });
 
 const alterarSchema = z.object({
-  senhaAtual: z.string().min(1).max(200),
-  novoUsuario: z.string().trim().min(3, "Login deve ter ao menos 3 caracteres").max(60),
-  novaSenha: z.string().min(6, "Senha deve ter ao menos 6 caracteres").max(200),
+  senhaAtual: z.string().min(1, "Informe a senha atual.").max(200),
+  novoUsuario: z.string().trim().min(3, "O novo login deve ter ao menos 3 caracteres.").max(60),
+  novaSenha: z.string().min(6, "A nova senha deve ter ao menos 6 caracteres.").max(200),
 });
 
 export const alterarCredenciais = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => alterarSchema.parse(data))
+  .inputValidator((data: unknown) => data)
   .handler(async ({ data }) => {
-    const usuarioAtual = await exigirAcessoServidor();
-    if (!(await senhaAtualConfere(usuarioAtual, data.senhaAtual))) {
+    const parsed = alterarSchema.safeParse(data);
+    if (!parsed.success) {
+      return { ok: false as const, erro: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+    }
+    const entrada = parsed.data;
+    let usuarioAtual: string;
+    try {
+      usuarioAtual = await exigirAcessoServidor();
+    } catch {
+      return { ok: false as const, erro: "Sessão expirada. Entre novamente para trocar o acesso." };
+    }
+    if (!(await senhaAtualConfere(usuarioAtual, entrada.senhaAtual))) {
       return { ok: false as const, erro: "Senha atual incorreta." };
     }
-    await salvarCredenciais(data.novoUsuario, data.novaSenha);
+    try {
+      await salvarCredenciais(entrada.novoUsuario, entrada.novaSenha);
+      await migrarCartoes(usuarioAtual, entrada.novoUsuario.trim());
+    } catch (e) {
+      return {
+        ok: false as const,
+        erro: e instanceof Error ? e.message : "Não foi possível salvar as novas credenciais.",
+      };
+    }
     const session = await abrirSessao();
-    await session.update({ unlocked: true, user: data.novoUsuario.trim() });
-    return { ok: true as const };
+    await session.update({ unlocked: true, user: entrada.novoUsuario.trim() });
+    return { ok: true as const, erro: undefined };
   });
+

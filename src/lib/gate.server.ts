@@ -8,7 +8,12 @@ export function sessionConfig() {
     password: process.env.SESSION_SECRET!,
     name: "lotofacil-gate",
     maxAge: 60 * 60 * 24 * 7,
-    cookie: { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/" },
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as const,
+      path: "/",
+    },
   };
 }
 
@@ -66,9 +71,16 @@ export async function credenciaisValidas(usuario: string, senha: string) {
   return matches(usuario.trim(), u) && matches(senha, p);
 }
 
-/** Confere a senha atual (banco ou inicial) antes de permitir a troca. */
-export async function senhaAtualConfere(usuario: string, senha: string) {
-  return credenciaisValidas(usuario, senha);
+/** Confere apenas a SENHA atual (banco ou inicial), independente do login digitado. */
+export async function senhaAtualConfere(_usuario: string, senha: string) {
+  const salvas = await credenciaisSalvas();
+  if (salvas) {
+    const hash = await derivarHash(senha, salvas.senha_salt);
+    return matches(hash, salvas.senha_hash);
+  }
+  const p = process.env.SITE_PASSWORD;
+  if (!p) throw new Error("Credenciais do app não configuradas");
+  return matches(senha, p);
 }
 
 export async function salvarCredenciais(usuario: string, senha: string) {
@@ -88,9 +100,20 @@ export async function salvarCredenciais(usuario: string, senha: string) {
   if (error) throw new Error(error.message);
 }
 
+/** Mantém os cartões salvos vinculados ao novo login. */
+export async function migrarCartoes(usuarioAntigo: string, usuarioNovo: string) {
+  if (!usuarioAntigo || usuarioAntigo === usuarioNovo) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await supabaseAdmin
+    .from("cartoes_salvos")
+    .update({ usuario: usuarioNovo })
+    .eq("usuario", usuarioAntigo);
+}
+
 export async function abrirSessao() {
   return useSession<GateSession>(sessionConfig());
 }
+
 
 /** Retorna o usuário logado ou null — nunca lança Response. */
 export async function usuarioDaSessao(): Promise<string | null> {

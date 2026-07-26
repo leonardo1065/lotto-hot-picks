@@ -39,10 +39,15 @@ function AlterarSenha() {
     e.preventDefault();
     const formEl = e.currentTarget;
     const form = new FormData(formEl);
+    const novoUsuario = String(form.get("novoUsuario") ?? "").trim();
     const novaSenha = String(form.get("novaSenha") ?? "");
     const confirmar = String(form.get("confirmar") ?? "");
     setOk(false);
     setErro(null);
+    if (novoUsuario.length < 3) {
+      setErro("O novo login precisa ter ao menos 3 caracteres.");
+      return;
+    }
     if (novaSenha.length < 6) {
       setErro("A nova senha precisa ter ao menos 6 caracteres.");
       return;
@@ -51,12 +56,13 @@ function AlterarSenha() {
       setErro("A confirmação da nova senha não confere.");
       return;
     }
+
     setSalvando(true);
     try {
       const res = await alterar({
         data: {
           senhaAtual: String(form.get("senhaAtual") ?? ""),
-          novoUsuario: String(form.get("novoUsuario") ?? ""),
+          novoUsuario,
           novaSenha,
         },
       });
