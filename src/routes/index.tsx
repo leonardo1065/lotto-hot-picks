@@ -762,8 +762,109 @@ function Index() {
             A simulação é retrospectiva: mostra como cada aposta teria se saído nos concursos já
             realizados. Não é previsão de resultados futuros.
           </p>
+
+          <button
+            onClick={salvarRodada}
+            className="mt-4 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5"
+          >
+            Salvar esta rodada
+          </button>
         </section>
       )}
+
+      {rodadas.length > 0 && (
+        <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-panel">
+          <h2 className="font-display text-2xl tracking-wide">Rodadas salvas</h2>
+          <p className="text-xs text-muted-foreground">
+            Marque até 3 rodadas para comparar lado a lado.
+          </p>
+
+          <ul className="mt-4 space-y-2 text-sm">
+            {rodadas.map((r) => (
+              <li
+                key={r.id}
+                className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3"
+              >
+                <label className="flex flex-1 items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={comparar.includes(r.id)}
+                    onChange={() => alternarComparacao(r.id)}
+                    className="size-4 accent-current"
+                  />
+                  <span>
+                    <strong className="font-display text-lg tracking-wide">
+                      {r.cartoes} cartão(ões)
+                    </strong>{" "}
+                    · janela {r.janela} concursos
+                    {r.concursoTopo ? ` (até #${r.concursoTopo})` : ""} · {r.dezenasAtivas} dezenas
+                    ativas
+                    <span className="block text-xs text-muted-foreground">
+                      {new Date(r.criadaEm).toLocaleString("pt-BR")} · média {r.media.toFixed(2)} ·{" "}
+                      {r.premiados} premiações
+                    </span>
+                  </span>
+                </label>
+                <button
+                  onClick={() => removerRodada(r.id)}
+                  className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Remover
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {rodadasComparadas.length > 1 && (
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full min-w-[520px] text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs uppercase text-muted-foreground">
+                    <th className="py-2 text-left">Métrica</th>
+                    {rodadasComparadas.map((r) => (
+                      <th key={r.id} className="py-2 text-center">
+                        {new Date(r.criadaEm).toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { rotulo: "Cartões", valor: (r: Rodada) => String(r.cartoes) },
+                    { rotulo: "Janela (concursos)", valor: (r: Rodada) => String(r.janela) },
+                    { rotulo: "Dezenas ativas", valor: (r: Rodada) => String(r.dezenasAtivas) },
+                    { rotulo: "Conferências", valor: (r: Rodada) => String(r.sorteios) },
+                    { rotulo: "Média de acertos", valor: (r: Rodada) => r.media.toFixed(2) },
+                    { rotulo: "Total premiado", valor: (r: Rodada) => String(r.premiados) },
+                    ...FAIXAS.map((f) => ({
+                      rotulo: `${f} acertos`,
+                      valor: (r: Rodada) => String(r.faixas[f] ?? 0),
+                    })),
+                    {
+                      rotulo: "Premiação por cartão",
+                      valor: (r: Rodada) => (r.premiados / Math.max(1, r.cartoes)).toFixed(2),
+                    },
+                  ].map((linha) => (
+                    <tr key={linha.rotulo} className="border-b border-border/60">
+                      <td className="py-2 text-muted-foreground">{linha.rotulo}</td>
+                      {rodadasComparadas.map((r) => (
+                        <td key={r.id} className="py-2 text-center font-display text-lg">
+                          {linha.valor(r)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+
 
 
       {geradas.length > 0 && (
