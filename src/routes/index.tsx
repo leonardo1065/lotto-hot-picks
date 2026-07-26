@@ -550,6 +550,57 @@ function Index() {
         </section>
       )}
 
+      {melhores && (
+        <section className="mt-6 rounded-2xl border border-accent/60 bg-card p-5 shadow-panel">
+          <h2 className="font-display text-2xl tracking-wide">Os 3 melhores cartões</h2>
+          <p className="text-xs text-muted-foreground">
+            Escolhidos entre os {apostas.length} cartões gerados, por desempenho nos{" "}
+            {concursos.length} concursos analisados (faixas de 11 a 15 acertos com peso maior para
+            as premiações altas).
+          </p>
+          <ol className="mt-4 space-y-4">
+            {melhores.map((r, pos) => (
+              <li
+                key={r.jogo.join("-")}
+                className="rounded-xl border border-accent/40 bg-secondary/30 p-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-display text-lg tracking-wide text-accent">
+                    {pos + 1}º · Cartão {r.indice}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    média {r.media.toFixed(2)} · melhor {r.melhor} acertos · {r.premiados} vezes
+                    premiado
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-5 gap-2 sm:grid-cols-8">
+                  {r.jogo.map((n) => (
+                    <div
+                      key={n}
+                      className="ball-base w-full border border-accent bg-accent/15 text-xl text-foreground"
+                    >
+                      {String(n).padStart(2, "0")}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                  {FAIXAS.map((f) => (
+                    <span key={f}>
+                      {f} pts: <strong className="text-foreground">{r.faixas[f]}</strong>
+                    </span>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Critério retrospectivo: são os cartões que teriam rendido mais nos concursos usados. Não
+            garante acerto futuro.
+          </p>
+        </section>
+      )}
+
+
       {simulacao && (
         <section className="mt-6 rounded-2xl border border-primary/40 bg-card p-5 shadow-panel">
           <h2 className="font-display text-2xl tracking-wide">Simulação de desempenho</h2>
