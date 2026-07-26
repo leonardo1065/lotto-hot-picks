@@ -6,6 +6,7 @@ import {
   exigirAcessoServidor,
   salvarCredenciais,
   senhaAtualConfere,
+  usuarioDaSessao,
 } from "./gate.server";
 
 export const entrar = createServerFn({ method: "POST" })
