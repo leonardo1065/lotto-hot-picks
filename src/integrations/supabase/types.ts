@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cartoes_salvos: {
+        Row: {
+          concurso_topo: number | null
+          criado_em: string
+          id: string
+          janela: number
+          jogos: Json
+          usuario: string
+        }
+        Insert: {
+          concurso_topo?: number | null
+          criado_em?: string
+          id?: string
+          janela?: number
+          jogos: Json
+          usuario: string
+        }
+        Update: {
+          concurso_topo?: number | null
+          criado_em?: string
+          id?: string
+          janela?: number
+          jogos?: Json
+          usuario?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

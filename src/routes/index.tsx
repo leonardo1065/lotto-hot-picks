@@ -4,6 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { buscarConcursos, buscarConcurso, type ConcursoResultado } from "@/lib/lotofacil.functions";
 import { exigirAcesso, sair } from "@/lib/gate.functions";
+import {
+  listarCartoes,
+  salvarCartoesNuvem,
+  removerCartoesNuvem,
+  type LoteCartoes,
+} from "@/lib/cartoes.functions";
+
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
@@ -62,13 +69,8 @@ type Rodada = {
   sorteios: number;
 };
 
-type CartoesSalvos = {
-  id: string;
-  criadoEm: number;
-  janela: number;
-  concursoTopo?: number;
-  jogos: number[][];
-};
+type CartoesSalvos = LoteCartoes;
+
 
 
 // sorteio ponderado: quanto mais a dezena saiu nos concursos, maior a chance
@@ -102,19 +104,59 @@ function Index() {
   const [erro, setErro] = useState<string | null>(null);
   const [rodadas, setRodadas] = useState<Rodada[]>([]);
   const [comparar, setComparar] = useState<string[]>([]);
-  const [salvos, setSalvos] = useState<CartoesSalvos[]>([]);
   const [conferirId, setConferirId] = useState<string | null>(null);
   const [concursoAlvo, setConcursoAlvo] = useState<string>("");
+  const [salvandoCartoes, setSalvandoCartoes] = useState(false);
+
+  const listar = useServerFn(listarCartoes);
+  const salvarNuvem = useServerFn(salvarCartoesNuvem);
+  const removerNuvem = useServerFn(removerCartoesNuvem);
+
+  const {
+    data: salvos = [],
+    refetch: recarregarSalvos,
+    isFetching: carregandoSalvos,
+  } = useQuery({
+    queryKey: ["cartoes-salvos"],
+    queryFn: () => listar(),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+  });
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_RODADAS);
       if (raw) setRodadas(JSON.parse(raw) as Rodada[]);
-      const rawC = localStorage.getItem(STORAGE_CARTOES);
-      if (rawC) setSalvos(JSON.parse(rawC) as CartoesSalvos[]);
     } catch {
       /* histórico indisponível */
     }
+  }, []);
+
+  // migra uma única vez os cartões que ficaram salvos no navegador para a nuvem
+  useEffect(() => {
+    const migrar = async () => {
+      try {
+        const rawC = localStorage.getItem(STORAGE_CARTOES);
+        if (!rawC) return;
+        const antigos = JSON.parse(rawC) as CartoesSalvos[];
+        localStorage.removeItem(STORAGE_CARTOES);
+        for (const lote of antigos.slice(0, 20).reverse()) {
+          if (!lote?.jogos?.length) continue;
+          await salvarNuvem({
+            data: {
+              janela: lote.janela ?? 0,
+              concursoTopo: lote.concursoTopo ?? null,
+              jogos: lote.jogos,
+            },
+          });
+        }
+        await recarregarSalvos();
+      } catch {
+        /* migração opcional */
+      }
+    };
+    void migrar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const persistir = (lista: Rodada[]) => {
@@ -126,14 +168,6 @@ function Index() {
     }
   };
 
-  const persistirCartoes = (lista: CartoesSalvos[]) => {
-    setSalvos(lista);
-    try {
-      localStorage.setItem(STORAGE_CARTOES, JSON.stringify(lista));
-    } catch {
-      /* ignora falha de armazenamento */
-    }
-  };
 
 
 
@@ -378,29 +412,41 @@ function Index() {
   const rodadasComparadas = rodadas.filter((r) => comparar.includes(r.id));
 
   // ---- cartões salvos e conferência com o resultado oficial ----
-  const salvarCartoes = () => {
+  const salvarCartoes = async () => {
     const jogos = apostas.length ? apostas : geradas.length === 15 ? [geradas] : [];
     if (!jogos.length) {
       setErro("Gere ao menos um cartão para salvar.");
       return;
     }
     setErro(null);
-    const novo: CartoesSalvos = {
-      id: `${Date.now()}`,
-      criadoEm: Date.now(),
-      janela: concursos.length,
-      concursoTopo: concursos[0]?.concurso,
-      jogos,
-    };
-    const lista = [novo, ...salvos].slice(0, 20);
-    persistirCartoes(lista);
-    setConferirId(novo.id);
+    setSalvandoCartoes(true);
+    try {
+      const novo = await salvarNuvem({
+        data: {
+          janela: concursos.length,
+          concursoTopo: concursos[0]?.concurso ?? null,
+          jogos,
+        },
+      });
+      await recarregarSalvos();
+      setConferirId(novo.id);
+    } catch {
+      setErro("Não foi possível salvar os cartões na nuvem. Tente de novo.");
+    } finally {
+      setSalvandoCartoes(false);
+    }
   };
 
-  const removerCartoes = (id: string) => {
-    persistirCartoes(salvos.filter((c) => c.id !== id));
-    setConferirId((prev) => (prev === id ? null : prev));
+  const removerCartoes = async (id: string) => {
+    try {
+      await removerNuvem({ data: { id } });
+      await recarregarSalvos();
+      setConferirId((prev) => (prev === id ? null : prev));
+    } catch {
+      setErro("Não foi possível remover este lote.");
+    }
   };
+
 
   const buscarUm = useServerFn(buscarConcurso);
   const numeroAlvo = concursoAlvo.trim() ? Number(concursoAlvo.trim()) : null;
@@ -713,10 +759,12 @@ function Index() {
           </ul>
           <button
             onClick={salvarCartoes}
-            className="mt-4 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5"
+            disabled={salvandoCartoes}
+            className="mt-4 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
           >
-            Salvar estes cartões para conferir
+            {salvandoCartoes ? "Salvando na nuvem..." : "Salvar estes cartões para conferir"}
           </button>
+
         </section>
       )}
 
@@ -724,18 +772,23 @@ function Index() {
       <section className="mt-6 rounded-2xl border border-accent/60 bg-card p-5 shadow-panel">
         <h2 className="font-display text-2xl tracking-wide">Conferir cartões com o resultado</h2>
         <p className="text-xs text-muted-foreground">
-          Salve os cartões gerados e confira com o último concurso da Caixa ou com um concurso
-          específico.
+          Os cartões ficam salvos na nuvem da sua conta — dá para conferir de qualquer dispositivo,
+          com o último concurso da Caixa ou um concurso específico.
+          {carregandoSalvos ? " Carregando seus cartões..." : ""}
         </p>
 
         {(apostas.length > 0 || geradas.length === 15) && (
           <button
             onClick={salvarCartoes}
-            className="mt-4 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5"
+            disabled={salvandoCartoes}
+            className="mt-4 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
           >
-            Salvar cartões gerados agora ({apostas.length || 1})
+            {salvandoCartoes
+              ? "Salvando na nuvem..."
+              : `Salvar cartões gerados agora (${apostas.length || 1})`}
           </button>
         )}
+
 
 
 
