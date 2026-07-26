@@ -728,6 +728,17 @@ function Index() {
           específico.
         </p>
 
+        {(apostas.length > 0 || geradas.length === 15) && (
+          <button
+            onClick={salvarCartoes}
+            className="mt-4 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5"
+          >
+            Salvar cartões gerados agora ({apostas.length || 1})
+          </button>
+        )}
+
+
+
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="text-sm">
             <span className="block text-[11px] text-muted-foreground">Concurso (vazio = último)</span>
