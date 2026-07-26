@@ -62,7 +62,7 @@ function AlterarSenha() {
       const res = await alterar({
         data: {
           senhaAtual: String(form.get("senhaAtual") ?? ""),
-          novoUsuario: String(form.get("novoUsuario") ?? ""),
+          novoUsuario,
           novaSenha,
         },
       });
