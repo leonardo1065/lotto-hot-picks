@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -6,7 +6,10 @@ import { buscarConcursos, type ConcursoResultado } from "@/lib/lotofacil.functio
 import { exigirAcesso, sair } from "@/lib/gate.functions";
 
 export const Route = createFileRoute("/")({
-  beforeLoad: () => exigirAcesso(),
+  beforeLoad: async () => {
+    const { autorizado } = await exigirAcesso();
+    if (!autorizado) throw redirect({ to: "/login" });
+  },
   head: () => ({
     meta: [
       { title: "Gerador Lotofácil 15 Dezenas | Painel de 25" },
