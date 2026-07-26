@@ -410,11 +410,15 @@ function Index() {
 
         <div className="mt-6 rounded-xl border border-border p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="font-display text-xl tracking-wide">Gerar várias apostas</h3>
+            <h3 className="font-display text-xl tracking-wide">Quantos cartões quer jogar?</h3>
             <span className="text-xs text-muted-foreground">
               8 quentes · 5 mornas · 2 frias, sorteadas por peso do ranking
             </span>
           </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Escolha 3, 5, 10 ou mais cartões — cada cartão é um jogo de 15 dezenas, todos
+            diferentes entre si.
+          </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {OPCOES_APOSTAS.map((op) => (
               <button
