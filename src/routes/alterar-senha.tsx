@@ -1,10 +1,13 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { alterarCredenciais, exigirAcesso } from "@/lib/gate.functions";
 
 export const Route = createFileRoute("/alterar-senha")({
-  beforeLoad: () => exigirAcesso(),
+  beforeLoad: async () => {
+    const { autorizado } = await exigirAcesso();
+    if (!autorizado) throw redirect({ to: "/login" });
+  },
   head: () => ({
     meta: [
       { title: "Alterar login e senha | Gerador Lotofácil" },
