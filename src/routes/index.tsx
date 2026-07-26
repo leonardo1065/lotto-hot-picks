@@ -759,10 +759,12 @@ function Index() {
           </ul>
           <button
             onClick={salvarCartoes}
-            className="mt-4 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5"
+            disabled={salvandoCartoes}
+            className="mt-4 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
           >
-            Salvar estes cartões para conferir
+            {salvandoCartoes ? "Salvando na nuvem..." : "Salvar estes cartões para conferir"}
           </button>
+
         </section>
       )}
 
