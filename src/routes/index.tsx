@@ -439,10 +439,10 @@ function Index() {
             <input
               type="number"
               min={1}
-              max={30}
+              max={100}
               value={qtdApostas}
               onChange={(e) =>
-                setQtdApostas(Math.max(1, Math.min(30, Number(e.target.value) || 1)))
+                setQtdApostas(Math.max(1, Math.min(100, Number(e.target.value) || 1)))
               }
               className="w-24 rounded-full border border-border bg-input px-4 py-2 text-center font-display text-lg tracking-wide outline-none focus:border-accent"
               aria-label="Quantidade de apostas"
