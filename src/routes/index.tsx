@@ -104,19 +104,59 @@ function Index() {
   const [erro, setErro] = useState<string | null>(null);
   const [rodadas, setRodadas] = useState<Rodada[]>([]);
   const [comparar, setComparar] = useState<string[]>([]);
-  const [salvos, setSalvos] = useState<CartoesSalvos[]>([]);
   const [conferirId, setConferirId] = useState<string | null>(null);
   const [concursoAlvo, setConcursoAlvo] = useState<string>("");
+  const [salvandoCartoes, setSalvandoCartoes] = useState(false);
+
+  const listar = useServerFn(listarCartoes);
+  const salvarNuvem = useServerFn(salvarCartoesNuvem);
+  const removerNuvem = useServerFn(removerCartoesNuvem);
+
+  const {
+    data: salvos = [],
+    refetch: recarregarSalvos,
+    isFetching: carregandoSalvos,
+  } = useQuery({
+    queryKey: ["cartoes-salvos"],
+    queryFn: () => listar(),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+  });
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_RODADAS);
       if (raw) setRodadas(JSON.parse(raw) as Rodada[]);
-      const rawC = localStorage.getItem(STORAGE_CARTOES);
-      if (rawC) setSalvos(JSON.parse(rawC) as CartoesSalvos[]);
     } catch {
       /* histórico indisponível */
     }
+  }, []);
+
+  // migra uma única vez os cartões que ficaram salvos no navegador para a nuvem
+  useEffect(() => {
+    const migrar = async () => {
+      try {
+        const rawC = localStorage.getItem(STORAGE_CARTOES);
+        if (!rawC) return;
+        const antigos = JSON.parse(rawC) as CartoesSalvos[];
+        localStorage.removeItem(STORAGE_CARTOES);
+        for (const lote of antigos.slice(0, 20).reverse()) {
+          if (!lote?.jogos?.length) continue;
+          await salvarNuvem({
+            data: {
+              janela: lote.janela ?? 0,
+              concursoTopo: lote.concursoTopo ?? null,
+              jogos: lote.jogos,
+            },
+          });
+        }
+        await recarregarSalvos();
+      } catch {
+        /* migração opcional */
+      }
+    };
+    void migrar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const persistir = (lista: Rodada[]) => {
@@ -128,14 +168,6 @@ function Index() {
     }
   };
 
-  const persistirCartoes = (lista: CartoesSalvos[]) => {
-    setSalvos(lista);
-    try {
-      localStorage.setItem(STORAGE_CARTOES, JSON.stringify(lista));
-    } catch {
-      /* ignora falha de armazenamento */
-    }
-  };
 
 
 
