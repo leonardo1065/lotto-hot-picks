@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { buscarConcursos, type ConcursoResultado } from "@/lib/lotofacil.functions";
+import { exigirAcesso, sair } from "@/lib/gate.functions";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: () => exigirAcesso(),
   head: () => ({
     meta: [
       { title: "Gerador Lotofácil 15 Dezenas | Painel de 25" },
@@ -30,6 +32,15 @@ const TODAS = Array.from({ length: 25 }, (_, i) => i + 1);
 const OPCOES = [10, 20, 30, 50, 100];
 const OPCOES_APOSTAS = [3, 5, 8, 10];
 const PRIMOS = [2, 3, 5, 7, 11, 13, 17, 19, 23];
+const FAIXAS = [15, 14, 13, 12, 11];
+const PREMIO_MEDIO: Record<number, string> = {
+  15: "prêmio principal",
+  14: "~R$ 1.900",
+  13: "~R$ 30",
+  12: "~R$ 12",
+  11: "~R$ 6",
+};
+
 
 // sorteio ponderado: quanto mais a dezena saiu nos concursos, maior a chance
 function sortearPonderado(pool: { n: number; peso: number }[], qtd: number) {
@@ -199,7 +210,54 @@ function Index() {
   };
 
 
+  // simulação: confronta cada aposta gerada com todos os concursos analisados
+  const simulacao = useMemo(() => {
+    const jogosParaSimular = apostas.length
+      ? apostas
+      : geradas.length === 15
+        ? [geradas]
+        : [];
+    if (!jogosParaSimular.length || !concursos.length) return null;
 
+    const zeroFaixas = () => ({ 11: 0, 12: 0, 13: 0, 14: 0, 15: 0 }) as Record<number, number>;
+    const geral = zeroFaixas();
+    let somaGeral = 0;
+    let sorteiosGeral = 0;
+
+    const porAposta = jogosParaSimular.map((jogo) => {
+      const set = new Set(jogo);
+      const faixas = zeroFaixas();
+      let totalAcertos = 0;
+      let melhor = 0;
+      for (const c of concursos) {
+        let acertos = 0;
+        for (const d of c.dezenas) if (set.has(d)) acertos++;
+        totalAcertos += acertos;
+        if (acertos > melhor) melhor = acertos;
+        if (acertos >= 11) {
+          faixas[acertos]++;
+          geral[acertos]++;
+        }
+      }
+      somaGeral += totalAcertos;
+      sorteiosGeral += concursos.length;
+      return {
+        jogo,
+        faixas,
+        media: totalAcertos / concursos.length,
+        melhor,
+        premiados: FAIXAS.reduce((a, f) => a + faixas[f], 0),
+      };
+    });
+
+    return {
+      porAposta,
+      geral,
+      sorteios: sorteiosGeral,
+      mediaGeral: somaGeral / sorteiosGeral,
+      usandoJogoUnico: !apostas.length,
+    };
+  }, [apostas, geradas, concursos]);
 
   const zerar = () => {
     setAtivas([]);
@@ -207,11 +265,25 @@ function Index() {
     setApostas([]);
   };
 
+  const sairFn = useServerFn(sair);
+  const router = useRouter();
+  const sairDoApp = async () => {
+    await sairFn();
+    await router.navigate({ to: "/login" });
+  };
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10">
       <header className="mb-8">
-        <p className="font-display text-sm tracking-[0.35em] text-accent">LOTOFÁCIL · CAIXA</p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="font-display text-sm tracking-[0.35em] text-accent">LOTOFÁCIL · CAIXA</p>
+          <button
+            onClick={sairDoApp}
+            className="rounded-full border border-border px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
+          >
+            Sair
+          </button>
+        </div>
         <h1 className="font-display text-5xl leading-none tracking-wide sm:text-6xl">
           Gerador de 15 dezenas
         </h1>
@@ -220,6 +292,7 @@ function Index() {
           analisar e veja o ranking das dezenas mais sorteadas.
         </p>
       </header>
+
 
       <section className="rounded-2xl border border-border bg-card p-5 shadow-panel">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -414,6 +487,94 @@ function Index() {
               );
             })}
           </ul>
+        </section>
+      )}
+
+      {simulacao && (
+        <section className="mt-6 rounded-2xl border border-primary/40 bg-card p-5 shadow-panel">
+          <h2 className="font-display text-2xl tracking-wide">Simulação de desempenho</h2>
+          <p className="text-xs text-muted-foreground">
+            {simulacao.usandoJogoUnico
+              ? "Jogo gerado"
+              : `${simulacao.porAposta.length} apostas`}{" "}
+            conferidas contra os {concursos.length} concursos analisados ·{" "}
+            {simulacao.sorteios} conferências
+          </p>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {FAIXAS.map((f) => {
+              const qtd = simulacao.geral[f];
+              const perc = (qtd / simulacao.sorteios) * 100;
+              return (
+                <div key={f} className="rounded-xl border border-border p-3">
+                  <p className="font-display text-xl tracking-wide">{f} acertos</p>
+                  <p className="text-2xl font-semibold">{qtd}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {perc.toFixed(1)}% · {PREMIO_MEDIO[f]}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="mt-4 text-sm text-muted-foreground">
+            Média de acertos por conferência:{" "}
+            <strong className="text-foreground">{simulacao.mediaGeral.toFixed(2)}</strong> · a cada
+            100 apostas jogadas nesses concursos, a estimativa é de{" "}
+            <strong className="text-foreground">
+              {((simulacao.geral[11] +
+                simulacao.geral[12] +
+                simulacao.geral[13] +
+                simulacao.geral[14] +
+                simulacao.geral[15]) /
+                simulacao.sorteios *
+                100).toFixed(1)}
+            </strong>{" "}
+            jogos premiados (11+ acertos).
+          </p>
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground">
+                  <th className="py-2">Aposta</th>
+                  {FAIXAS.map((f) => (
+                    <th key={f} className="py-2 text-center">
+                      {f}
+                    </th>
+                  ))}
+                  <th className="py-2 text-center">Média</th>
+                  <th className="py-2 text-center">Melhor</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {simulacao.porAposta.map((r, i) => (
+                  <tr key={r.jogo.join("-")}>
+                    <td className="py-2 font-display tracking-wide">
+                      {simulacao.usandoJogoUnico ? "Jogo gerado" : `Aposta ${i + 1}`}
+                    </td>
+                    {FAIXAS.map((f) => (
+                      <td
+                        key={f}
+                        className={`py-2 text-center ${
+                          r.faixas[f] > 0 ? "font-semibold text-accent" : "text-muted-foreground"
+                        }`}
+                      >
+                        {r.faixas[f]}
+                      </td>
+                    ))}
+                    <td className="py-2 text-center">{r.media.toFixed(2)}</td>
+                    <td className="py-2 text-center font-semibold">{r.melhor}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            A simulação é retrospectiva: mostra como cada aposta teria se saído nos concursos já
+            realizados. Não é previsão de resultados futuros.
+          </p>
         </section>
       )}
 
