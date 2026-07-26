@@ -728,7 +728,9 @@ function Index() {
             Baseados no ranking dos últimos {concursos.length} concursos · todos diferentes entre si
           </p>
           {geradoEm && (
-            <p className="text-xs text-accent">Gerados em {formatarDataHora(geradoEm)}</p>
+            <p className="mt-2 inline-block rounded-full border border-accent bg-accent/10 px-4 py-1 font-display text-base tracking-wide text-accent">
+              Gerados em {formatarDataHora(geradoEm)}
+            </p>
           )}
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-border p-3">
@@ -736,8 +738,10 @@ function Index() {
               <p className="font-display text-2xl tracking-wide">{apostas.length}</p>
             </div>
             <div className="rounded-xl border border-border p-3">
-              <p className="text-[11px] text-muted-foreground">Dezenas por cartão</p>
-              <p className="font-display text-2xl tracking-wide">15</p>
+              <p className="text-[11px] text-muted-foreground">Data e hora da geração</p>
+              <p className="font-display text-2xl tracking-wide">
+                {geradoEm ? formatarDataHora(geradoEm) : "—"}
+              </p>
             </div>
             <div className="rounded-xl border border-border p-3">
               <p className="text-[11px] text-muted-foreground">Dezenas diferentes usadas</p>
@@ -762,7 +766,8 @@ function Index() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-display text-lg tracking-wide">Cartão {i + 1}</span>
                     <span className="text-xs text-muted-foreground">
-                      soma {soma} · {pares} pares / {15 - pares} ímpares · {primos} primos
+                      {geradoEm ? `${formatarDataHora(geradoEm)} · ` : ""}soma {soma} · {pares}{" "}
+                      pares / {15 - pares} ímpares · {primos} primos
                     </span>
                   </div>
                   <div className="mt-2 grid grid-cols-5 gap-2 sm:grid-cols-8">
@@ -1217,7 +1222,9 @@ function Index() {
             {concursos[0]?.data})
           </p>
           {geradasEm && (
-            <p className="text-xs text-accent">Gerado em {formatarDataHora(geradasEm)}</p>
+            <p className="mt-2 inline-block rounded-full border border-primary bg-primary/10 px-4 py-1 font-display text-base tracking-wide text-primary">
+              Gerado em {formatarDataHora(geradasEm)}
+            </p>
           )}
           <div className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8">
             {geradas.map((n) => (
