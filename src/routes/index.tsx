@@ -588,7 +588,7 @@ function Index() {
           Gerador de 15 dezenas
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-          Adicionar botões de ação rápida para eu selecionar/desmarcar dezenas (e também desfazer) com mais agilidade no painel 01 a 25.
+          Adicionar um histórico das últimas gerações com data, base usada (quantos concursos) e as 15 dezenas escolhidas.
         </p>
       </header>
 
