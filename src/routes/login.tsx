@@ -56,7 +56,7 @@ function Login() {
       <p className="font-display text-sm tracking-[0.35em] text-accent">LOTOFÁCIL · CAIXA</p>
       <h1 className="font-display text-5xl leading-none tracking-wide">Acesso restrito</h1>
       <p className="mt-3 text-sm text-muted-foreground">
-        implemente opçao de logim sem email com cadastrar novo loguim e senha
+        pode aplicar com opçao se caso esquecer senha e loguim , informe o email pra recuperalçao de senha e usuario
       </p>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
