@@ -288,10 +288,19 @@ function Index() {
     else setErro(null);
   }, [isError]);
 
-  const alternar = (n: number) =>
+  const alternar = (n: number) => {
+    setHistoricoAtivas((prev) => [ativas, ...prev].slice(0, 50));
     setAtivas((prev) =>
       prev.includes(n) ? prev.filter((x) => x !== n) : [...prev, n].sort((a, b) => a - b),
     );
+  };
+
+  const desfazer = () => {
+    if (historicoAtivas.length === 0) return;
+    const [anterior, ...resto] = historicoAtivas;
+    setAtivas(anterior);
+    setHistoricoAtivas(resto);
+  };
 
   const gerar = () => {
     if (ativas.length < 15) {
