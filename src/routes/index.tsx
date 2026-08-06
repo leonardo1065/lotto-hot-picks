@@ -588,8 +588,7 @@ function Index() {
           Gerador de 15 dezenas
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-          Os resultados são atualizados automaticamente ao abrir a tela. Escolha quantos concursos
-          analisar e veja o ranking das dezenas mais sorteadas.
+          Adicionar botões de ação rápida para eu selecionar/desmarcar dezenas (e também desfazer) com mais agilidade no painel 01 a 25.
         </p>
       </header>
 
