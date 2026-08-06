@@ -692,10 +692,20 @@ function Index() {
             Zerar dezenas
           </button>
           <button
-            onClick={() => setAtivas(TODAS)}
+            onClick={() => {
+              setHistoricoAtivas((prev) => [ativas, ...prev].slice(0, 50));
+              setAtivas(TODAS);
+            }}
             className="rounded-full border border-border bg-secondary px-6 py-3 font-display text-xl tracking-wide text-secondary-foreground transition-colors hover:border-primary"
           >
             Marcar todas
+          </button>
+          <button
+            onClick={desfazer}
+            disabled={historicoAtivas.length === 0}
+            className="rounded-full border border-border bg-secondary px-6 py-3 font-display text-xl tracking-wide text-secondary-foreground transition-colors hover:border-primary disabled:opacity-40"
+          >
+            Desfazer
           </button>
         </div>
 
