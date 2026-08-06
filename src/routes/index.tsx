@@ -546,6 +546,7 @@ function Index() {
 
 
   const zerar = () => {
+    setHistoricoAtivas((prev) => [ativas, ...prev].slice(0, 50));
     setAtivas([]);
     setGeradas([]);
     setApostas([]);
