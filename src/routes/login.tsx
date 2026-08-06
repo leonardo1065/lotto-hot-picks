@@ -56,7 +56,7 @@ function Login() {
       <p className="font-display text-sm tracking-[0.35em] text-accent">LOTOFÁCIL · CAIXA</p>
       <h1 className="font-display text-5xl leading-none tracking-wide">Acesso restrito</h1>
       <p className="mt-3 text-sm text-muted-foreground">
-        Informe seu login e senha para abrir o gerador de dezenas.
+        implemente opçao de logim sem email com cadastrar novo loguim e senha
       </p>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
