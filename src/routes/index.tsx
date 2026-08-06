@@ -142,6 +142,7 @@ function Index() {
   const buscar = useServerFn(buscarConcursos);
   const [quantidade, setQuantidade] = useState(20);
   const [ativas, setAtivas] = useState<number[]>(TODAS);
+  const [historicoAtivas, setHistoricoAtivas] = useState<number[][]>([]);
   const [geradas, setGeradas] = useState<number[]>([]);
   const [qtdApostas, setQtdApostas] = useState(5);
   const [apostas, setApostas] = useState<number[][]>([]);
