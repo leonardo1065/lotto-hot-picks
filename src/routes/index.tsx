@@ -142,6 +142,7 @@ function Index() {
   const buscar = useServerFn(buscarConcursos);
   const [quantidade, setQuantidade] = useState(20);
   const [ativas, setAtivas] = useState<number[]>(TODAS);
+  const [historicoAtivas, setHistoricoAtivas] = useState<number[][]>([]);
   const [geradas, setGeradas] = useState<number[]>([]);
   const [qtdApostas, setQtdApostas] = useState(5);
   const [apostas, setApostas] = useState<number[][]>([]);
@@ -287,10 +288,19 @@ function Index() {
     else setErro(null);
   }, [isError]);
 
-  const alternar = (n: number) =>
+  const alternar = (n: number) => {
+    setHistoricoAtivas((prev) => [ativas, ...prev].slice(0, 50));
     setAtivas((prev) =>
       prev.includes(n) ? prev.filter((x) => x !== n) : [...prev, n].sort((a, b) => a - b),
     );
+  };
+
+  const desfazer = () => {
+    if (historicoAtivas.length === 0) return;
+    const [anterior, ...resto] = historicoAtivas;
+    setAtivas(anterior);
+    setHistoricoAtivas(resto);
+  };
 
   const gerar = () => {
     if (ativas.length < 15) {
@@ -536,6 +546,7 @@ function Index() {
 
 
   const zerar = () => {
+    setHistoricoAtivas((prev) => [ativas, ...prev].slice(0, 50));
     setAtivas([]);
     setGeradas([]);
     setApostas([]);
@@ -577,8 +588,7 @@ function Index() {
           Gerador de 15 dezenas
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-          Os resultados são atualizados automaticamente ao abrir a tela. Escolha quantos concursos
-          analisar e veja o ranking das dezenas mais sorteadas.
+          Adicionar botões de ação rápida para eu selecionar/desmarcar dezenas (e também desfazer) com mais agilidade no painel 01 a 25.
         </p>
       </header>
 
@@ -681,10 +691,20 @@ function Index() {
             Zerar dezenas
           </button>
           <button
-            onClick={() => setAtivas(TODAS)}
+            onClick={() => {
+              setHistoricoAtivas((prev) => [ativas, ...prev].slice(0, 50));
+              setAtivas(TODAS);
+            }}
             className="rounded-full border border-border bg-secondary px-6 py-3 font-display text-xl tracking-wide text-secondary-foreground transition-colors hover:border-primary"
           >
             Marcar todas
+          </button>
+          <button
+            onClick={desfazer}
+            disabled={historicoAtivas.length === 0}
+            className="rounded-full border border-border bg-secondary px-6 py-3 font-display text-xl tracking-wide text-secondary-foreground transition-colors hover:border-primary disabled:opacity-40"
+          >
+            Desfazer
           </button>
         </div>
 
