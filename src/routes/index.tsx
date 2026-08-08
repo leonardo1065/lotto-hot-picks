@@ -1504,7 +1504,7 @@ function Index() {
           </ul>
         </section>
       )}
-    </main>
-  </div>
+      </main>
+    </div>
   );
 }
