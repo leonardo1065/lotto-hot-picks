@@ -155,6 +155,7 @@ function Index() {
   const [concursoAlvo, setConcursoAlvo] = useState<string>("");
   const [salvandoCartoes, setSalvandoCartoes] = useState(false);
 
+  const [numSimulacoes, setNumSimulacoes] = useState(100);
   const listar = useServerFn(listarCartoes);
   const salvarNuvem = useServerFn(salvarCartoesNuvem);
   const removerNuvem = useServerFn(removerCartoesNuvem);
