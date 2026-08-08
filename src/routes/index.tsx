@@ -589,8 +589,40 @@ function Index() {
     await router.navigate({ to: "/login" });
   };
 
+  // Conferência automática ao carregar
+  useEffect(() => {
+    if (concursos.length > 0 && salvos.length > 0 && !conferirId) {
+      // Se temos concursos e cartões salvos, mas não estamos conferindo um lote específico,
+      // sugerimos conferir o lote mais recente com o último concurso.
+      setConferirId(salvos[0].id);
+      setConcursoAlvo(String(concursos[0].concurso));
+    }
+  }, [concursos, salvos, conferirId]);
+
+  const statsRanking = useMemo(() => {
+    // Helper para calcular ranking em diferentes janelas
+    const calcularPara = (qtd: number) => {
+      const sub = concursos.slice(0, Math.min(qtd, concursos.length));
+      if (sub.length === 0) return ranking;
+      const mapa = new Map<number, number>();
+      for (const c of sub) {
+        for (const d of c.dezenas) mapa.set(d, (mapa.get(d) ?? 0) + 1);
+      }
+      return TODAS.map((n) => ({ n, freq: mapa.get(n) ?? 0 })).sort((a, b) => b.freq - a.freq);
+    };
+
+    return {
+      j10: calcularPara(10),
+      j20: calcularPara(20),
+      j30: calcularPara(30),
+      j50: calcularPara(50),
+    };
+  }, [concursos, ranking]);
+
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-10">
+    <div className="min-h-screen bg-background text-foreground pb-20">
+      <main className="mx-auto w-full max-w-3xl px-5 py-10">
+
       <header className="mb-8">
         <div className="flex items-start justify-between gap-3">
           <p className="font-display text-sm tracking-[0.35em] text-accent">LOTOFÁCIL · CAIXA</p>
