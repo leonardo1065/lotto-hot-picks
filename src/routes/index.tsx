@@ -412,12 +412,26 @@ function Index() {
     let somaGeral = 0;
     let sorteiosGeral = 0;
 
+    // Se o usuário pedir muitas simulações, podemos usar um subconjunto aleatório ou repetir
+    // mas aqui a simulação é contra o histórico real dos concursos carregados.
+    // O pedido do usuário diz "recalcular a chance... com base nas simulações realizadas".
+    // Vou ajustar para que o cálculo use numSimulacoes concursos aleatórios do histórico (se disponíveis)
+    // ou simplesmente limitar a janela de análise se for o caso, mas o mais lógico é
+    // que ele queira rodar X simulações estocásticas se fosse sorteio puro.
+    // Como estamos baseados em concursos REAIS, vou usar a janela de concursos carregada.
+    
     const porAposta = jogosParaSimular.map((jogo) => {
       const set = new Set(jogo);
       const faixas = zeroFaixas();
       let totalAcertos = 0;
       let melhor = 0;
-      for (const c of concursos) {
+      
+      // Se numSimulacoes for maior que concursos.length, repetimos com variação ou usamos apenas o total.
+      // Aqui vamos respeitar o numSimulacoes fazendo sorteios aleatórios do histórico
+      for (let i = 0; i < numSimulacoes; i++) {
+        const c = concursos[Math.floor(Math.random() * concursos.length)];
+        if (!c) continue;
+        
         let acertos = 0;
         for (const d of c.dezenas) if (set.has(d)) acertos++;
         totalAcertos += acertos;
@@ -427,12 +441,13 @@ function Index() {
           geral[acertos]++;
         }
       }
+      
       somaGeral += totalAcertos;
-      sorteiosGeral += concursos.length;
+      sorteiosGeral += numSimulacoes;
       return {
         jogo,
         faixas,
-        media: totalAcertos / concursos.length,
+        media: totalAcertos / numSimulacoes,
         melhor,
         premiados: FAIXAS.reduce((a, f) => a + faixas[f], 0),
       };
@@ -445,7 +460,7 @@ function Index() {
       mediaGeral: somaGeral / sorteiosGeral,
       usandoJogoUnico: !apostas.length,
     };
-  }, [apostas, geradas, concursos]);
+  }, [apostas, geradas, concursos, numSimulacoes]);
 
   // top 3 cartões: score histórico ponderado pelas faixas de premiação + média de acertos
   const melhores = useMemo(() => {
