@@ -784,26 +784,27 @@ function Index() {
           </button>
         </div>
 
-        <div className="mt-6 rounded-xl border border-border p-4">
+        <div className="mt-6 rounded-xl border-2 border-primary bg-primary/5 p-4 shadow-lg ring-1 ring-primary/20">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="font-display text-xl tracking-wide">Quantos cartões quer jogar?</h3>
-            <span className="text-xs text-muted-foreground">
-              8 quentes · 5 mornas · 2 frias, sorteadas por peso do ranking
+            <h3 className="font-display text-xl tracking-wide text-primary">Melhor quantidade de cartões para jogar</h3>
+            <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground">
+              RECOMENDADO
             </span>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Escolha 3, 5, 10 ou mais cartões — cada cartão é um jogo de 15 dezenas, todos
-            diferentes entre si.
+          <p className="mt-1 text-xs font-medium text-foreground">
+            Para garantir uma probabilidade real de acertos entre 11 e 14 pontos, escolha as opções destacadas:
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {OPCOES_APOSTAS.map((op) => (
               <button
                 key={op}
                 onClick={() => setQtdApostas(op)}
-                className={`rounded-full border px-4 py-2 font-display text-lg tracking-wide transition-colors ${
+                className={`rounded-full border-2 px-5 py-2.5 font-display text-xl tracking-wide transition-all ${
                   qtdApostas === op
-                    ? "border-accent bg-accent text-accent-foreground"
-                    : "border-border bg-secondary text-secondary-foreground hover:border-accent"
+                    ? "border-primary bg-primary text-primary-foreground shadow-md scale-105"
+                    : op >= 15 
+                      ? "border-primary/40 bg-primary/10 text-primary hover:border-primary"
+                      : "border-border bg-secondary text-secondary-foreground hover:border-primary"
                 }`}
               >
                 {op}
