@@ -1094,9 +1094,7 @@ function Index() {
         <section className="mt-6 rounded-2xl border border-accent/60 bg-card p-5 shadow-panel">
           <h2 className="font-display text-2xl tracking-wide">Os 3 melhores cartões</h2>
           <p className="text-xs text-muted-foreground">
-            Escolhidos entre os {apostas.length} cartões gerados, por desempenho nos{" "}
-            {concursos.length} concursos analisados (faixas de 11 a 15 acertos com peso maior para
-            as premiações altas).
+            Estes cartões foram selecionados por terem a maior probabilidade de acerto (focando em 13 pontos) baseados no histórico analisado.
           </p>
           <ol className="mt-4 space-y-4">
             {melhores.map((r, pos) => (
@@ -1142,13 +1140,12 @@ function Index() {
 
       {simulacao && (
         <section className="mt-6 rounded-2xl border border-primary/40 bg-card p-5 shadow-panel">
-          <h2 className="font-display text-2xl tracking-wide">Simulação de desempenho</h2>
+          <h2 className="font-display text-2xl tracking-wide">Desempenho da rodada</h2>
           <p className="text-xs text-muted-foreground">
             {simulacao.usandoJogoUnico
               ? "Jogo gerado"
               : `${simulacao.porAposta.length} apostas`}{" "}
-            conferidas contra os {concursos.length} concursos analisados ·{" "}
-            {simulacao.sorteios} conferências
+            conferidas contra os {concursos.length} concursos analisados
           </p>
 
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
