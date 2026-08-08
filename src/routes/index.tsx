@@ -23,7 +23,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "tirar as decriçoes que estao abaixo do gerador, tentar fechar a moior combinaçao possivel para acerto com 13 pontos com a escolha de cartoes a gera mos os 3 cartoes mais forte para acertos",
+          "Adicionar um controle para eu escolher quantas simulações o sistema deve rodar para recalcular a chance de alcançar 13 pontos em cada um dos 3 cartões.",
       },
       { property: "og:title", content: "Lotofácil Expert" },
       {
