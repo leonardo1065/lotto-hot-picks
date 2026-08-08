@@ -616,7 +616,7 @@ function Index() {
           Gerador de 15 dezenas
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-          Adicionar um histórico das últimas gerações com data, base usada (quantos concursos) e as 15 dezenas escolhidas.
+          favor implementar nas estatistica e estrategia a melhor estrategia entre os concursos exemplo 10,20,30 oumais, gere os cartoes com maior possibilidade e probabilidade de acertos , qunado limpar dezenas ele zere os cartoes que estao no painel do jogo, opçao  de salvar os cartoes para futura conferencia, e quando abrir o sistema autometicamente atualiza os resultado mostre o concurso e as dexenas sorteadas e ja logo em seguida busque os cartoes dalvos e mostre qual foi os cartoes premiados
         </p>
       </header>
 
