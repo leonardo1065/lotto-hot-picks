@@ -19,17 +19,17 @@ export const Route = createFileRoute("/")({
   },
   head: () => ({
     meta: [
-      { title: "Gerador Lotofácil 15 Dezenas | Painel de 25" },
+      { title: "Lotofácil Expert | Estratégias e Conferência Automática" },
       {
         name: "description",
         content:
-          "Gere 15 dezenas da Lotofácil a partir das mais sorteadas nos últimos concursos da Caixa, com painel fixo de 01 a 25 e estratégia de acertos.",
+          "favor implementar nas estatistica e estrategia a melhor estrategia entre os concursos exemplo 10,20,30 oumais, gere os cartoes com maior possibilidade e probabilidade de acertos , qunado limpar dezenas ele zere os cartoes que estao no painel do jogo, opçao  de salvar os cartoes para futura conferencia, e quando abrir o sistema autometicamente atualiza os resultado mostre o concurso e as dexenas sorteadas e ja logo em seguida busque os cartoes dalvos e mostre qual foi os cartoes premiados",
       },
-      { property: "og:title", content: "Gerador Lotofácil 15 Dezenas" },
+      { property: "og:title", content: "Lotofácil Expert" },
       {
         property: "og:description",
         content:
-          "Ranking das dezenas mais sorteadas, painel de 25 dezenas e estratégia de jogo baseada nos concursos recentes da Caixa.",
+          "Estratégias avançadas, ranking de dezenas e conferência automática de cartões salvos.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -302,6 +302,22 @@ function Index() {
     setHistoricoAtivas(resto);
   };
 
+  const validarJogoOtimizado = (jogo: number[]) => {
+    const p = jogo.filter((n) => n % 2 === 0).length;
+    // Padrão comum: 7:8 ou 8:7 pares/ímpares
+    if (p < 7 || p > 8) return false;
+    
+    const pr = jogo.filter((n) => PRIMOS.includes(n)).length;
+    // Padrão comum: 5 ou 6 primos
+    if (pr < 5 || pr > 6) return false;
+
+    const s = jogo.reduce((a, b) => a + b, 0);
+    // Padrão comum: soma entre 180 e 210
+    if (s < 180 || s > 210) return false;
+
+    return true;
+  };
+
   const gerar = () => {
     if (ativas.length < 15) {
       setErro("Selecione ao menos 15 dezenas no painel para gerar o jogo.");
@@ -345,21 +361,33 @@ function Index() {
     const novas: number[][] = [];
     let tentativas = 0;
 
-    while (novas.length < qtdApostas && tentativas < qtdApostas * 60) {
+    // Tentamos gerar jogos equilibrados (otimizados) primeiro
+    while (novas.length < qtdApostas && tentativas < qtdApostas * 100) {
       tentativas++;
-      const jogo = new Set<number>([
+      const jogoSet = new Set<number>([
         ...sortearPonderado(poolQuentes, Math.min(8, poolQuentes.length)),
         ...sortearPonderado(poolMornas, Math.min(5, poolMornas.length)),
         ...sortearPonderado(poolFrias, Math.min(2, poolFrias.length)),
       ]);
-      for (const p of sortearPonderado(poolTodas, poolTodas.length)) {
-        if (jogo.size >= 15) break;
-        jogo.add(p);
+      
+      if (jogoSet.size < 15) {
+         const extras = sortearPonderado(poolTodas, poolTodas.length);
+         for (const p of extras) {
+           if (jogoSet.size >= 15) break;
+           jogoSet.add(p);
+         }
       }
-      if (jogo.size < 15) break;
-      const lista = [...jogo].slice(0, 15).sort((a, b) => a - b);
+
+      if (jogoSet.size < 15) continue;
+      const lista = [...jogoSet].slice(0, 15).sort((a, b) => a - b);
       const chave = lista.join("-");
       if (vistas.has(chave)) continue;
+
+      // Na primeira metade das tentativas, buscamos jogos "perfeitos" estatisticamente
+      if (tentativas < qtdApostas * 50) {
+        if (!validarJogoOtimizado(lista)) continue;
+      }
+
       vistas.add(chave);
       novas.push(lista);
     }
@@ -561,8 +589,40 @@ function Index() {
     await router.navigate({ to: "/login" });
   };
 
+  // Conferência automática ao carregar
+  useEffect(() => {
+    if (concursos.length > 0 && salvos.length > 0 && !conferirId) {
+      // Se temos concursos e cartões salvos, mas não estamos conferindo um lote específico,
+      // sugerimos conferir o lote mais recente com o último concurso.
+      setConferirId(salvos[0].id);
+      setConcursoAlvo(String(concursos[0].concurso));
+    }
+  }, [concursos, salvos, conferirId]);
+
+  const statsRanking = useMemo(() => {
+    // Helper para calcular ranking em diferentes janelas
+    const calcularPara = (qtd: number) => {
+      const sub = concursos.slice(0, Math.min(qtd, concursos.length));
+      if (sub.length === 0) return ranking;
+      const mapa = new Map<number, number>();
+      for (const c of sub) {
+        for (const d of c.dezenas) mapa.set(d, (mapa.get(d) ?? 0) + 1);
+      }
+      return TODAS.map((n) => ({ n, freq: mapa.get(n) ?? 0 })).sort((a, b) => b.freq - a.freq);
+    };
+
+    return {
+      j10: calcularPara(10),
+      j20: calcularPara(20),
+      j30: calcularPara(30),
+      j50: calcularPara(50),
+    };
+  }, [concursos, ranking]);
+
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-10">
+    <div className="min-h-screen bg-background text-foreground pb-20">
+      <main className="mx-auto w-full max-w-3xl px-5 py-10">
+
       <header className="mb-8">
         <div className="flex items-start justify-between gap-3">
           <p className="font-display text-sm tracking-[0.35em] text-accent">LOTOFÁCIL · CAIXA</p>
@@ -588,7 +648,7 @@ function Index() {
           Gerador de 15 dezenas
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-          Adicionar um histórico das últimas gerações com data, base usada (quantos concursos) e as 15 dezenas escolhidas.
+          favor implementar nas estatistica e estrategia a melhor estrategia entre os concursos exemplo 10,20,30 oumais, gere os cartoes com maior possibilidade e probabilidade de acertos , qunado limpar dezenas ele zere os cartoes que estao no painel do jogo, opçao  de salvar os cartoes para futura conferencia, e quando abrir o sistema autometicamente atualiza os resultado mostre o concurso e as dexenas sorteadas e ja logo em seguida busque os cartoes dalvos e mostre qual foi os cartoes premiados
         </p>
       </header>
 
@@ -688,7 +748,7 @@ function Index() {
             onClick={zerar}
             className="rounded-full border border-destructive px-6 py-3 font-display text-xl tracking-wide text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground"
           >
-            Zerar dezenas
+            Limpar dezenas
           </button>
           <button
             onClick={() => {
@@ -1325,6 +1385,34 @@ function Index() {
         </section>
       )}
 
+      {concursos.length > 0 && statsRanking && (
+        <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-panel">
+          <h2 className="font-display text-2xl tracking-wide">Melhor estratégia entre concursos</h2>
+          <p className="text-xs text-muted-foreground">
+            Comparação das dezenas mais sorteadas em diferentes janelas de concursos.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {[
+              { label: "10 Concursos", data: statsRanking.j10 },
+              { label: "20 Concursos", data: statsRanking.j20 },
+              { label: "30 Concursos", data: statsRanking.j30 },
+              { label: "50 Concursos", data: statsRanking.j50 },
+            ].map((janela) => (
+              <div key={janela.label} className="rounded-xl border border-border p-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{janela.label}</p>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {janela.data.slice(0, 5).map(r => (
+                    <span key={r.n} className="ball-base size-7 text-xs border border-accent/40 bg-secondary">
+                      {String(r.n).padStart(2, "0")}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {concursos.length > 0 && sugestaoEstrategica.length === 15 && (
         <section className="mt-6 rounded-2xl border border-accent/40 bg-card p-5 shadow-panel">
           <h2 className="font-display text-2xl tracking-wide">Estratégia sugerida</h2>
@@ -1333,6 +1421,7 @@ function Index() {
             premiados misturam repetição recente com dezenas atrasadas, em vez de usar só as mais
             sorteadas.
           </p>
+
 
           <div className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8">
             {sugestaoEstrategica.map((n) => (
@@ -1415,6 +1504,7 @@ function Index() {
           </ul>
         </section>
       )}
-    </main>
+      </main>
+    </div>
   );
 }
