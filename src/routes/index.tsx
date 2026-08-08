@@ -23,7 +23,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "favor implementar nas estatistica e estrategia a melhor estrategia entre os concursos exemplo 10,20,30 oumais, gere os cartoes com maior possibilidade e probabilidade de acertos , qunado limpar dezenas ele zere os cartoes que estao no painel do jogo, opçao  de salvar os cartoes para futura conferencia, e quando abrir o sistema autometicamente atualiza os resultado mostre o concurso e as dexenas sorteadas e ja logo em seguida busque os cartoes dalvos e mostre qual foi os cartoes premiados",
+          "tirar as decriçoes que estao abaixo do gerador, tentar fechar a moior combinaçao possivel para acerto com 13 pontos com a escolha de cartoes a gera mos os 3 cartoes mais forte para acertos",
       },
       { property: "og:title", content: "Lotofácil Expert" },
       {
@@ -449,7 +449,7 @@ function Index() {
   // top 3 cartões: score histórico ponderado pelas faixas de premiação + média de acertos
   const melhores = useMemo(() => {
     if (!simulacao || simulacao.usandoJogoUnico || simulacao.porAposta.length < 2) return null;
-    const PESO: Record<number, number> = { 11: 1, 12: 6, 13: 40, 14: 300, 15: 2000 };
+    const PESO: Record<number, number> = { 11: 1, 12: 5, 13: 50, 14: 200, 15: 1000 };
     return simulacao.porAposta
       .map((r, i) => ({
         ...r,
@@ -648,7 +648,7 @@ function Index() {
           Gerador de 15 dezenas
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-          favor implementar nas estatistica e estrategia a melhor estrategia entre os concursos exemplo 10,20,30 oumais, gere os cartoes com maior possibilidade e probabilidade de acertos , qunado limpar dezenas ele zere os cartoes que estao no painel do jogo, opçao  de salvar os cartoes para futura conferencia, e quando abrir o sistema autometicamente atualiza os resultado mostre o concurso e as dexenas sorteadas e ja logo em seguida busque os cartoes dalvos e mostre qual foi os cartoes premiados
+          tirar as decriçoes que estao abaixo do gerador, tentar fechar a moior combinaçao possivel para acerto com 13 pontos com a escolha de cartoes a gera mos os 3 cartoes mais forte para acertos
         </p>
       </header>
 
@@ -1134,8 +1134,7 @@ function Index() {
             ))}
           </ol>
           <p className="mt-4 text-xs text-muted-foreground">
-            Critério retrospectivo: são os cartões que teriam rendido mais nos concursos usados. Não
-            garante acerto futuro.
+            Os 3 melhores cartões são selecionados priorizando a pontuação de 13 pontos e a média histórica mais alta.
           </p>
         </section>
       )}
@@ -1168,21 +1167,6 @@ function Index() {
             })}
           </div>
 
-          <p className="mt-4 text-sm text-muted-foreground">
-            Média de acertos por conferência:{" "}
-            <strong className="text-foreground">{simulacao.mediaGeral.toFixed(2)}</strong> · a cada
-            100 apostas jogadas nesses concursos, a estimativa é de{" "}
-            <strong className="text-foreground">
-              {((simulacao.geral[11] +
-                simulacao.geral[12] +
-                simulacao.geral[13] +
-                simulacao.geral[14] +
-                simulacao.geral[15]) /
-                simulacao.sorteios *
-                100).toFixed(1)}
-            </strong>{" "}
-            jogos premiados (11+ acertos).
-          </p>
 
           <div className="mt-5 overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
@@ -1222,10 +1206,6 @@ function Index() {
             </table>
           </div>
 
-          <p className="mt-4 text-xs text-muted-foreground">
-            A simulação é retrospectiva: mostra como cada aposta teria se saído nos concursos já
-            realizados. Não é previsão de resultados futuros.
-          </p>
 
           <button
             onClick={salvarRodada}
