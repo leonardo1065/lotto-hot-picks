@@ -1167,7 +1167,7 @@ function Index() {
                     <div className="ml-auto h-1.5 w-24 overflow-hidden rounded-full bg-accent/10">
                       <div 
                         className="h-full bg-accent transition-all" 
-                        style={{ width: `${Math.min(100, (r.faixas[13] / concursos.length) * 1000)}%` }}
+                        style={{ width: `${Math.min(100, (r.faixas[13] / numSimulacoes) * 1000)}%` }}
                       />
                     </div>
                   </div>
