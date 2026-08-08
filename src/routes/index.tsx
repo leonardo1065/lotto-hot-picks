@@ -19,17 +19,17 @@ export const Route = createFileRoute("/")({
   },
   head: () => ({
     meta: [
-      { title: "Gerador Lotofácil 15 Dezenas | Painel de 25" },
+      { title: "Lotofácil Expert | Estratégias e Conferência Automática" },
       {
         name: "description",
         content:
-          "Gere 15 dezenas da Lotofácil a partir das mais sorteadas nos últimos concursos da Caixa, com painel fixo de 01 a 25 e estratégia de acertos.",
+          "favor implementar nas estatistica e estrategia a melhor estrategia entre os concursos exemplo 10,20,30 oumais, gere os cartoes com maior possibilidade e probabilidade de acertos , qunado limpar dezenas ele zere os cartoes que estao no painel do jogo, opçao  de salvar os cartoes para futura conferencia, e quando abrir o sistema autometicamente atualiza os resultado mostre o concurso e as dexenas sorteadas e ja logo em seguida busque os cartoes dalvos e mostre qual foi os cartoes premiados",
       },
-      { property: "og:title", content: "Gerador Lotofácil 15 Dezenas" },
+      { property: "og:title", content: "Lotofácil Expert" },
       {
         property: "og:description",
         content:
-          "Ranking das dezenas mais sorteadas, painel de 25 dezenas e estratégia de jogo baseada nos concursos recentes da Caixa.",
+          "Estratégias avançadas, ranking de dezenas e conferência automática de cartões salvos.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
