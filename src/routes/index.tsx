@@ -302,20 +302,12 @@ function Index() {
     setHistoricoAtivas(resto);
   };
 
-  const zerar = () => {
-    setHistoricoAtivas((prev) => [ativas, ...prev].slice(0, 50));
-    setAtivas([]);
-    setGeradas([]);
-    setApostas([]);
-  };
-
   const validarJogoOtimizado = (jogo: number[]) => {
     const p = jogo.filter((n) => n % 2 === 0).length;
-    const i = 15 - p;
     // Padrão comum: 7:8 ou 8:7 pares/ímpares
     if (p < 7 || p > 8) return false;
     
-    const pr = jogo.filter((n) => [2, 3, 5, 7, 11, 13, 17, 19, 23].includes(n)).length;
+    const pr = jogo.filter((n) => PRIMOS.includes(n)).length;
     // Padrão comum: 5 ou 6 primos
     if (pr < 5 || pr > 6) return false;
 
