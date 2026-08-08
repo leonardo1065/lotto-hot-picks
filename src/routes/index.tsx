@@ -23,13 +23,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Adicionar um controle para eu escolher quantas simulações o sistema deve rodar para recalcular a chance de alcançar 13 pontos em cada um dos 3 cartões.",
+          "ao geras a quantidades de concursos analizados na mostragem colocar uma cor mais forte destacando as 15 melhores dezenas estrategicamente com a probabilidade de acerto de 11 a 14 e mostre qual seria a melhor quantidade de cartoes gerarados para jogar destacando em uma cor mais forte e em destaque",
       },
       { property: "og:title", content: "Lotofácil Expert" },
       {
         property: "og:description",
         content:
-          "Estratégias avançadas, ranking de dezenas e conferência automática de cartões salvos.",
+          "ao geras a quantidades de concursos analizados na mostragem colocar uma cor mais forte destacando as 15 melhores dezenas estrategicamente com a probabilidade de acerto de 11 a 14 e mostre qual seria a melhor quantidade de cartoes gerarados para jogar destacando em uma cor mais forte e em destaque",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -784,26 +784,27 @@ function Index() {
           </button>
         </div>
 
-        <div className="mt-6 rounded-xl border border-border p-4">
+        <div className="mt-6 rounded-xl border-2 border-primary bg-primary/5 p-4 shadow-lg ring-1 ring-primary/20">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="font-display text-xl tracking-wide">Quantos cartões quer jogar?</h3>
-            <span className="text-xs text-muted-foreground">
-              8 quentes · 5 mornas · 2 frias, sorteadas por peso do ranking
+            <h3 className="font-display text-xl tracking-wide text-primary">Melhor quantidade de cartões para jogar</h3>
+            <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground">
+              RECOMENDADO
             </span>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Escolha 3, 5, 10 ou mais cartões — cada cartão é um jogo de 15 dezenas, todos
-            diferentes entre si.
+          <p className="mt-1 text-xs font-medium text-foreground">
+            Para garantir uma probabilidade real de acertos entre 11 e 14 pontos, escolha as opções destacadas:
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {OPCOES_APOSTAS.map((op) => (
               <button
                 key={op}
                 onClick={() => setQtdApostas(op)}
-                className={`rounded-full border px-4 py-2 font-display text-lg tracking-wide transition-colors ${
+                className={`rounded-full border-2 px-5 py-2.5 font-display text-xl tracking-wide transition-all ${
                   qtdApostas === op
-                    ? "border-accent bg-accent text-accent-foreground"
-                    : "border-border bg-secondary text-secondary-foreground hover:border-accent"
+                    ? "border-primary bg-primary text-primary-foreground shadow-md scale-105"
+                    : op >= 15 
+                      ? "border-primary/40 bg-primary/10 text-primary hover:border-primary"
+                      : "border-border bg-secondary text-secondary-foreground hover:border-primary"
                 }`}
               >
                 {op}
@@ -1410,7 +1411,7 @@ function Index() {
         <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-panel">
           <h2 className="font-display text-2xl tracking-wide">Melhor estratégia entre concursos</h2>
           <p className="text-xs text-muted-foreground">
-            Comparação das dezenas mais sorteadas em diferentes janelas de concursos.
+            ao geras a quantidades de concursos analizados na mostragem colocar uma cor mais forte destacando as 15 melhores dezenas estrategicamente com a probabilidade de acerto de 11 a 14.
           </p>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
@@ -1419,11 +1420,19 @@ function Index() {
               { label: "30 Concursos", data: statsRanking.j30 },
               { label: "50 Concursos", data: statsRanking.j50 },
             ].map((janela) => (
-              <div key={janela.label} className="rounded-xl border border-border p-3">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{janela.label}</p>
+              <div key={janela.label} className="rounded-xl border border-border p-3 bg-card shadow-sm">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">{janela.label}</p>
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {janela.data.slice(0, 5).map(r => (
-                    <span key={r.n} className="ball-base size-7 text-xs border border-accent/40 bg-secondary">
+                  {janela.data.slice(0, 15).map((r, idx) => (
+                    <span 
+                      key={r.n} 
+                      className={`ball-base size-7 text-xs border ${
+                        idx < 5 
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm font-bold scale-110" 
+                          : "border-accent/40 bg-secondary"
+                      }`}
+                      title={`${r.freq} sorteios`}
+                    >
                       {String(r.n).padStart(2, "0")}
                     </span>
                   ))}
