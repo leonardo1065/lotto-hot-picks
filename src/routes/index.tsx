@@ -1094,7 +1094,7 @@ function Index() {
         <section className="mt-6 rounded-2xl border border-accent/60 bg-card p-5 shadow-panel">
           <h2 className="font-display text-2xl tracking-wide">Os 3 melhores cartões</h2>
           <p className="text-xs text-muted-foreground">
-            Estes cartões foram selecionados por terem a maior probabilidade de acerto (focando em 13 pontos) baseados no histórico analisado.
+            Exibir para cada um dos 3 cartões gerados uma estimativa de chance de alcançar 13 pontos com base nas simulações realizadas.
           </p>
           <ol className="mt-4 space-y-4">
             {melhores.map((r, pos) => (
@@ -1121,12 +1121,26 @@ function Index() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-                  {FAIXAS.map((f) => (
-                    <span key={f}>
-                      {f} pts: <strong className="text-foreground">{r.faixas[f]}</strong>
+                <div className="mt-3 flex flex-col gap-2">
+                  <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                    {FAIXAS.map((f) => (
+                      <span key={f}>
+                        {f} pts: <strong className="text-foreground">{r.faixas[f]}</strong>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg bg-accent/10 px-3 py-1.5 border border-accent/20">
+                    <span className="text-[10px] uppercase tracking-wider text-accent font-semibold">Chance estimada 13 pts:</span>
+                    <span className="text-sm font-bold text-foreground">
+                      {((r.faixas[13] / concursos.length) * 100).toFixed(2)}%
                     </span>
-                  ))}
+                    <div className="ml-auto h-1.5 w-24 overflow-hidden rounded-full bg-accent/10">
+                      <div 
+                        className="h-full bg-accent transition-all" 
+                        style={{ width: `${Math.min(100, (r.faixas[13] / concursos.length) * 1000)}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </li>
             ))}
