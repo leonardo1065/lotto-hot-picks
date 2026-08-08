@@ -1385,6 +1385,34 @@ function Index() {
         </section>
       )}
 
+      {concursos.length > 0 && statsRanking && (
+        <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-panel">
+          <h2 className="font-display text-2xl tracking-wide">Melhor estratégia entre concursos</h2>
+          <p className="text-xs text-muted-foreground">
+            Comparação das dezenas mais sorteadas em diferentes janelas de concursos.
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {[
+              { label: "10 Concursos", data: statsRanking.j10 },
+              { label: "20 Concursos", data: statsRanking.j20 },
+              { label: "30 Concursos", data: statsRanking.j30 },
+              { label: "50 Concursos", data: statsRanking.j50 },
+            ].map((janela) => (
+              <div key={janela.label} className="rounded-xl border border-border p-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{janela.label}</p>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {janela.data.slice(0, 5).map(r => (
+                    <span key={r.n} className="ball-base size-7 text-xs border border-accent/40 bg-secondary">
+                      {String(r.n).padStart(2, "0")}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {concursos.length > 0 && sugestaoEstrategica.length === 15 && (
         <section className="mt-6 rounded-2xl border border-accent/40 bg-card p-5 shadow-panel">
           <h2 className="font-display text-2xl tracking-wide">Estratégia sugerida</h2>
@@ -1393,6 +1421,7 @@ function Index() {
             premiados misturam repetição recente com dezenas atrasadas, em vez de usar só as mais
             sorteadas.
           </p>
+
 
           <div className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-8">
             {sugestaoEstrategica.map((n) => (
