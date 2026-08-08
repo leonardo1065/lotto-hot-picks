@@ -1410,7 +1410,7 @@ function Index() {
         <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-panel">
           <h2 className="font-display text-2xl tracking-wide">Melhor estratégia entre concursos</h2>
           <p className="text-xs text-muted-foreground">
-            Comparação das dezenas mais sorteadas em diferentes janelas de concursos.
+            ao geras a quantidades de concursos analizados na mostragem colocar uma cor mais forte destacando as 15 melhores dezenas estrategicamente com a probabilidade de acerto de 11 a 14.
           </p>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
@@ -1419,11 +1419,19 @@ function Index() {
               { label: "30 Concursos", data: statsRanking.j30 },
               { label: "50 Concursos", data: statsRanking.j50 },
             ].map((janela) => (
-              <div key={janela.label} className="rounded-xl border border-border p-3">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{janela.label}</p>
+              <div key={janela.label} className="rounded-xl border border-border p-3 bg-card shadow-sm">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">{janela.label}</p>
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {janela.data.slice(0, 5).map(r => (
-                    <span key={r.n} className="ball-base size-7 text-xs border border-accent/40 bg-secondary">
+                  {janela.data.slice(0, 15).map((r, idx) => (
+                    <span 
+                      key={r.n} 
+                      className={`ball-base size-7 text-xs border ${
+                        idx < 5 
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm font-bold scale-110" 
+                          : "border-accent/40 bg-secondary"
+                      }`}
+                      title={`${r.freq} sorteios`}
+                    >
                       {String(r.n).padStart(2, "0")}
                     </span>
                   ))}
