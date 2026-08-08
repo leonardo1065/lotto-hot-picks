@@ -748,7 +748,7 @@ function Index() {
             onClick={zerar}
             className="rounded-full border border-destructive px-6 py-3 font-display text-xl tracking-wide text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground"
           >
-            Zerar dezenas
+            Limpar dezenas
           </button>
           <button
             onClick={() => {
