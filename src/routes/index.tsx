@@ -29,7 +29,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Estratégias avançadas, ranking de dezenas e conferência automática de cartões salvos.",
+          "ao geras a quantidades de concursos analizados na mostragem colocar uma cor mais forte destacando as 15 melhores dezenas estrategicamente com a probabilidade de acerto de 11 a 14 e mostre qual seria a melhor quantidade de cartoes gerarados para jogar destacando em uma cor mais forte e em destaque",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
