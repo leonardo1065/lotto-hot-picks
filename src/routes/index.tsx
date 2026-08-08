@@ -1108,8 +1108,22 @@ function Index() {
 
       {melhores && (
         <section className="mt-6 rounded-2xl border border-accent/60 bg-card p-5 shadow-panel">
-          <h2 className="font-display text-2xl tracking-wide">Os 3 melhores cartões</h2>
-          <p className="text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-2xl tracking-wide">Os 3 melhores cartões</h2>
+            <div className="flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-3 py-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Simulações:</span>
+              <select 
+                value={numSimulacoes}
+                onChange={(e) => setNumSimulacoes(Number(e.target.value))}
+                className="bg-transparent text-xs font-bold outline-none focus:text-accent"
+              >
+                {[100, 500, 1000, 5000, 10000].map(n => (
+                  <option key={n} value={n}>{n.toLocaleString()}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
             Exibir para cada um dos 3 cartões gerados uma estimativa de chance de alcançar 13 pontos com base nas simulações realizadas.
           </p>
           <ol className="mt-4 space-y-4">
