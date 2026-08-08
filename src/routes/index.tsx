@@ -302,6 +302,30 @@ function Index() {
     setHistoricoAtivas(resto);
   };
 
+  const zerar = () => {
+    setHistoricoAtivas((prev) => [ativas, ...prev].slice(0, 50));
+    setAtivas([]);
+    setGeradas([]);
+    setApostas([]);
+  };
+
+  const validarJogoOtimizado = (jogo: number[]) => {
+    const p = jogo.filter((n) => n % 2 === 0).length;
+    const i = 15 - p;
+    // Padrão comum: 7:8 ou 8:7 pares/ímpares
+    if (p < 7 || p > 8) return false;
+    
+    const pr = jogo.filter((n) => [2, 3, 5, 7, 11, 13, 17, 19, 23].includes(n)).length;
+    // Padrão comum: 5 ou 6 primos
+    if (pr < 5 || pr > 6) return false;
+
+    const s = jogo.reduce((a, b) => a + b, 0);
+    // Padrão comum: soma entre 180 e 210
+    if (s < 180 || s > 210) return false;
+
+    return true;
+  };
+
   const gerar = () => {
     if (ativas.length < 15) {
       setErro("Selecione ao menos 15 dezenas no painel para gerar o jogo.");
@@ -345,21 +369,33 @@ function Index() {
     const novas: number[][] = [];
     let tentativas = 0;
 
-    while (novas.length < qtdApostas && tentativas < qtdApostas * 60) {
+    // Tentamos gerar jogos equilibrados (otimizados) primeiro
+    while (novas.length < qtdApostas && tentativas < qtdApostas * 100) {
       tentativas++;
-      const jogo = new Set<number>([
+      const jogoSet = new Set<number>([
         ...sortearPonderado(poolQuentes, Math.min(8, poolQuentes.length)),
         ...sortearPonderado(poolMornas, Math.min(5, poolMornas.length)),
         ...sortearPonderado(poolFrias, Math.min(2, poolFrias.length)),
       ]);
-      for (const p of sortearPonderado(poolTodas, poolTodas.length)) {
-        if (jogo.size >= 15) break;
-        jogo.add(p);
+      
+      if (jogoSet.size < 15) {
+         const extras = sortearPonderado(poolTodas, poolTodas.length);
+         for (const p of extras) {
+           if (jogoSet.size >= 15) break;
+           jogoSet.add(p);
+         }
       }
-      if (jogo.size < 15) break;
-      const lista = [...jogo].slice(0, 15).sort((a, b) => a - b);
+
+      if (jogoSet.size < 15) continue;
+      const lista = [...jogoSet].slice(0, 15).sort((a, b) => a - b);
       const chave = lista.join("-");
       if (vistas.has(chave)) continue;
+
+      // Na primeira metade das tentativas, buscamos jogos "perfeitos" estatisticamente
+      if (tentativas < qtdApostas * 50) {
+        if (!validarJogoOtimizado(lista)) continue;
+      }
+
       vistas.add(chave);
       novas.push(lista);
     }
