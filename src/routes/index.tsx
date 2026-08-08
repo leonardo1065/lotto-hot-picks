@@ -1162,7 +1162,7 @@ function Index() {
                   <div className="flex items-center gap-2 rounded-lg bg-accent/10 px-3 py-1.5 border border-accent/20">
                     <span className="text-[10px] uppercase tracking-wider text-accent font-semibold">Chance estimada 13 pts:</span>
                     <span className="text-sm font-bold text-foreground">
-                      {((r.faixas[13] / concursos.length) * 100).toFixed(2)}%
+                      {((r.faixas[13] / numSimulacoes) * 100).toFixed(2)}%
                     </span>
                     <div className="ml-auto h-1.5 w-24 overflow-hidden rounded-full bg-accent/10">
                       <div 
