@@ -23,7 +23,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Adicionar um controle para eu escolher quantas simulações o sistema deve rodar para recalcular a chance de alcançar 13 pontos em cada um dos 3 cartões.",
+          "ao geras a quantidades de concursos analizados na mostragem colocar uma cor mais forte destacando as 15 melhores dezenas estrategicamente com a probabilidade de acerto de 11 a 14 e mostre qual seria a melhor quantidade de cartoes gerarados para jogar destacando em uma cor mais forte e em destaque",
       },
       { property: "og:title", content: "Lotofácil Expert" },
       {
