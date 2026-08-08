@@ -1094,7 +1094,7 @@ function Index() {
         <section className="mt-6 rounded-2xl border border-accent/60 bg-card p-5 shadow-panel">
           <h2 className="font-display text-2xl tracking-wide">Os 3 melhores cartões</h2>
           <p className="text-xs text-muted-foreground">
-            Estes cartões foram selecionados por terem a maior probabilidade de acerto (focando em 13 pontos) baseados no histórico analisado.
+            Exibir para cada um dos 3 cartões gerados uma estimativa de chance de alcançar 13 pontos com base nas simulações realizadas.
           </p>
           <ol className="mt-4 space-y-4">
             {melhores.map((r, pos) => (
