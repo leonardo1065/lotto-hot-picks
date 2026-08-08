@@ -23,7 +23,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "tirar as decriçoes que estao abaixo do gerador, tentar fechar a moior combinaçao possivel para acerto com 13 pontos com a escolha de cartoes a gera mos os 3 cartoes mais forte para acertos",
+          "Adicionar um controle para eu escolher quantas simulações o sistema deve rodar para recalcular a chance de alcançar 13 pontos em cada um dos 3 cartões.",
       },
       { property: "og:title", content: "Lotofácil Expert" },
       {
@@ -155,6 +155,7 @@ function Index() {
   const [concursoAlvo, setConcursoAlvo] = useState<string>("");
   const [salvandoCartoes, setSalvandoCartoes] = useState(false);
 
+  const [numSimulacoes, setNumSimulacoes] = useState(100);
   const listar = useServerFn(listarCartoes);
   const salvarNuvem = useServerFn(salvarCartoesNuvem);
   const removerNuvem = useServerFn(removerCartoesNuvem);
@@ -411,12 +412,26 @@ function Index() {
     let somaGeral = 0;
     let sorteiosGeral = 0;
 
+    // Se o usuário pedir muitas simulações, podemos usar um subconjunto aleatório ou repetir
+    // mas aqui a simulação é contra o histórico real dos concursos carregados.
+    // O pedido do usuário diz "recalcular a chance... com base nas simulações realizadas".
+    // Vou ajustar para que o cálculo use numSimulacoes concursos aleatórios do histórico (se disponíveis)
+    // ou simplesmente limitar a janela de análise se for o caso, mas o mais lógico é
+    // que ele queira rodar X simulações estocásticas se fosse sorteio puro.
+    // Como estamos baseados em concursos REAIS, vou usar a janela de concursos carregada.
+    
     const porAposta = jogosParaSimular.map((jogo) => {
       const set = new Set(jogo);
       const faixas = zeroFaixas();
       let totalAcertos = 0;
       let melhor = 0;
-      for (const c of concursos) {
+      
+      // Se numSimulacoes for maior que concursos.length, repetimos com variação ou usamos apenas o total.
+      // Aqui vamos respeitar o numSimulacoes fazendo sorteios aleatórios do histórico
+      for (let i = 0; i < numSimulacoes; i++) {
+        const c = concursos[Math.floor(Math.random() * concursos.length)];
+        if (!c) continue;
+        
         let acertos = 0;
         for (const d of c.dezenas) if (set.has(d)) acertos++;
         totalAcertos += acertos;
@@ -426,12 +441,13 @@ function Index() {
           geral[acertos]++;
         }
       }
+      
       somaGeral += totalAcertos;
-      sorteiosGeral += concursos.length;
+      sorteiosGeral += numSimulacoes;
       return {
         jogo,
         faixas,
-        media: totalAcertos / concursos.length,
+        media: totalAcertos / numSimulacoes,
         melhor,
         premiados: FAIXAS.reduce((a, f) => a + faixas[f], 0),
       };
@@ -444,7 +460,7 @@ function Index() {
       mediaGeral: somaGeral / sorteiosGeral,
       usandoJogoUnico: !apostas.length,
     };
-  }, [apostas, geradas, concursos]);
+  }, [apostas, geradas, concursos, numSimulacoes]);
 
   // top 3 cartões: score histórico ponderado pelas faixas de premiação + média de acertos
   const melhores = useMemo(() => {
@@ -648,7 +664,7 @@ function Index() {
           Gerador de 15 dezenas
         </h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-          tirar as decriçoes que estao abaixo do gerador, tentar fechar a moior combinaçao possivel para acerto com 13 pontos com a escolha de cartoes a gera mos os 3 cartoes mais forte para acertos
+          Adicionar um controle para eu escolher quantas simulações o sistema deve rodar para recalcular a chance de alcançar 13 pontos em cada um dos 3 cartões.
         </p>
       </header>
 
@@ -1092,8 +1108,22 @@ function Index() {
 
       {melhores && (
         <section className="mt-6 rounded-2xl border border-accent/60 bg-card p-5 shadow-panel">
-          <h2 className="font-display text-2xl tracking-wide">Os 3 melhores cartões</h2>
-          <p className="text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-2xl tracking-wide">Os 3 melhores cartões</h2>
+            <div className="flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-3 py-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Simulações:</span>
+              <select 
+                value={numSimulacoes}
+                onChange={(e) => setNumSimulacoes(Number(e.target.value))}
+                className="bg-transparent text-xs font-bold outline-none focus:text-accent"
+              >
+                {[100, 500, 1000, 5000, 10000].map(n => (
+                  <option key={n} value={n}>{n.toLocaleString()}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
             Exibir para cada um dos 3 cartões gerados uma estimativa de chance de alcançar 13 pontos com base nas simulações realizadas.
           </p>
           <ol className="mt-4 space-y-4">
@@ -1132,12 +1162,12 @@ function Index() {
                   <div className="flex items-center gap-2 rounded-lg bg-accent/10 px-3 py-1.5 border border-accent/20">
                     <span className="text-[10px] uppercase tracking-wider text-accent font-semibold">Chance estimada 13 pts:</span>
                     <span className="text-sm font-bold text-foreground">
-                      {((r.faixas[13] / concursos.length) * 100).toFixed(2)}%
+                      {((r.faixas[13] / numSimulacoes) * 100).toFixed(2)}%
                     </span>
                     <div className="ml-auto h-1.5 w-24 overflow-hidden rounded-full bg-accent/10">
                       <div 
                         className="h-full bg-accent transition-all" 
-                        style={{ width: `${Math.min(100, (r.faixas[13] / concursos.length) * 1000)}%` }}
+                        style={{ width: `${Math.min(100, (r.faixas[13] / numSimulacoes) * 1000)}%` }}
                       />
                     </div>
                   </div>
