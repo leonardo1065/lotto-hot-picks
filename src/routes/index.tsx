@@ -859,6 +859,28 @@ function Index() {
             Para garantir uma probabilidade real de acertos entre 11 e 14 pontos, escolha as opções destacadas:
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
+            <label className="flex flex-wrap items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2">
+              <span className="font-display text-sm tracking-wide text-muted-foreground">
+                Combinação:
+              </span>
+              <select
+                value={estrategiaGeracao}
+                onChange={(e) =>
+                  setEstrategiaGeracao(
+                    e.target.value as "equilibrada" | "quentes" | "atrasadas" | "cobertura",
+                  )
+                }
+                className="bg-transparent font-display text-base tracking-wide outline-none"
+                aria-label="Estratégia de combinação"
+              >
+                <option value="equilibrada">Equilibrada (8 quentes · 5 mornas · 2 frias)</option>
+                <option value="quentes">Foco nas quentes (11 quentes · 4 mornas)</option>
+                <option value="atrasadas">Atrasadas (9 atrasadas · 6 quentes)</option>
+                <option value="cobertura">Cobertura máxima (variação total do painel)</option>
+              </select>
+            </label>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {OPCOES_APOSTAS.map((op) => (
               <button
                 key={op}
