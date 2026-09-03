@@ -156,6 +156,9 @@ function Index() {
   const [salvandoCartoes, setSalvandoCartoes] = useState(false);
 
   const [numSimulacoes, setNumSimulacoes] = useState(100);
+  const [estrategiaGeracao, setEstrategiaGeracao] = useState<
+    "equilibrada" | "quentes" | "atrasadas" | "cobertura"
+  >("equilibrada");
   const listar = useServerFn(listarCartoes);
   const salvarNuvem = useServerFn(salvarCartoesNuvem);
   const removerNuvem = useServerFn(removerCartoesNuvem);
