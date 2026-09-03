@@ -261,6 +261,25 @@ function Index() {
   const mornas = ranking.slice(8, 17);
   const frias = ranking.slice(17);
 
+  // atraso: há quantos concursos cada dezena não sai (0 = saiu no último)
+  const atrasos = useMemo(() => {
+    const mapa = new Map<number, number>(TODAS.map((n) => [n, concursos.length]));
+    concursos.forEach((c, idx) => {
+      for (const d of c.dezenas) {
+        if ((mapa.get(d) ?? concursos.length) === concursos.length) mapa.set(d, idx);
+      }
+    });
+    return mapa;
+  }, [concursos]);
+
+  const rankingAtraso = useMemo(
+    () =>
+      TODAS.map((n) => ({ n, atraso: atrasos.get(n) ?? 0 })).sort(
+        (a, b) => b.atraso - a.atraso || a.n - b.n,
+      ),
+    [atrasos],
+  );
+
   const sugestaoEstrategica = useMemo(() => {
     if (!concursos.length) return [] as number[];
     const permitidas = new Set(ativas);
