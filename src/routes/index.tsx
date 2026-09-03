@@ -156,6 +156,9 @@ function Index() {
   const [salvandoCartoes, setSalvandoCartoes] = useState(false);
 
   const [numSimulacoes, setNumSimulacoes] = useState(100);
+  const [estrategiaGeracao, setEstrategiaGeracao] = useState<
+    "equilibrada" | "quentes" | "atrasadas" | "cobertura"
+  >("equilibrada");
   const listar = useServerFn(listarCartoes);
   const salvarNuvem = useServerFn(salvarCartoesNuvem);
   const removerNuvem = useServerFn(removerCartoesNuvem);
@@ -258,6 +261,25 @@ function Index() {
   const mornas = ranking.slice(8, 17);
   const frias = ranking.slice(17);
 
+  // atraso: há quantos concursos cada dezena não sai (0 = saiu no último)
+  const atrasos = useMemo(() => {
+    const mapa = new Map<number, number>(TODAS.map((n) => [n, concursos.length]));
+    concursos.forEach((c, idx) => {
+      for (const d of c.dezenas) {
+        if ((mapa.get(d) ?? concursos.length) === concursos.length) mapa.set(d, idx);
+      }
+    });
+    return mapa;
+  }, [concursos]);
+
+  const rankingAtraso = useMemo(
+    () =>
+      TODAS.map((n) => ({ n, atraso: atrasos.get(n) ?? 0 })).sort(
+        (a, b) => b.atraso - a.atraso || a.n - b.n,
+      ),
+    [atrasos],
+  );
+
   const sugestaoEstrategica = useMemo(() => {
     if (!concursos.length) return [] as number[];
     const permitidas = new Set(ativas);
@@ -357,27 +379,69 @@ function Index() {
     const poolMornas = poolDe(mornas);
     const poolFrias = poolDe(frias);
     const poolTodas = poolDe(ranking);
+    const poolAtrasadas = rankingAtraso
+      .filter((r) => permitidas.has(r.n))
+      .map((r) => ({ n: r.n, peso: r.atraso + 1 }));
+
+    const completar = (jogoSet: Set<number>) => {
+      if (jogoSet.size < 15) {
+        const extras = sortearPonderado(poolTodas, poolTodas.length);
+        for (const p of extras) {
+          if (jogoSet.size >= 15) break;
+          jogoSet.add(p);
+        }
+      }
+      return jogoSet;
+    };
+
+    const montarJogo = (): Set<number> => {
+      switch (estrategiaGeracao) {
+        case "quentes":
+          // aposta forte nas dezenas mais frequentes da janela
+          return completar(
+            new Set<number>([
+              ...sortearPonderado(poolQuentes, Math.min(11, poolQuentes.length)),
+              ...sortearPonderado(poolMornas, Math.min(4, poolMornas.length)),
+            ]),
+          );
+        case "atrasadas":
+          // mistura dezenas que estão "na hora de sair" com as quentes
+          return completar(
+            new Set<number>([
+              ...sortearPonderado(poolAtrasadas, Math.min(9, poolAtrasadas.length)),
+              ...sortearPonderado(poolQuentes, Math.min(6, poolQuentes.length)),
+            ]),
+          );
+        case "cobertura":
+          // pesos quase iguais: cada cartão cobre uma fatia diferente do painel
+          return completar(
+            new Set<number>(
+              sortearPonderado(
+                poolTodas.map((p) => ({ n: p.n, peso: Math.sqrt(p.peso) })),
+                15,
+              ),
+            ),
+          );
+        default:
+          return completar(
+            new Set<number>([
+              ...sortearPonderado(poolQuentes, Math.min(8, poolQuentes.length)),
+              ...sortearPonderado(poolMornas, Math.min(5, poolMornas.length)),
+              ...sortearPonderado(poolFrias, Math.min(2, poolFrias.length)),
+            ]),
+          );
+      }
+    };
 
     const vistas = new Set<string>();
     const novas: number[][] = [];
     let tentativas = 0;
+    const otimizar = estrategiaGeracao === "equilibrada" || estrategiaGeracao === "quentes";
 
     // Tentamos gerar jogos equilibrados (otimizados) primeiro
     while (novas.length < qtdApostas && tentativas < qtdApostas * 100) {
       tentativas++;
-      const jogoSet = new Set<number>([
-        ...sortearPonderado(poolQuentes, Math.min(8, poolQuentes.length)),
-        ...sortearPonderado(poolMornas, Math.min(5, poolMornas.length)),
-        ...sortearPonderado(poolFrias, Math.min(2, poolFrias.length)),
-      ]);
-      
-      if (jogoSet.size < 15) {
-         const extras = sortearPonderado(poolTodas, poolTodas.length);
-         for (const p of extras) {
-           if (jogoSet.size >= 15) break;
-           jogoSet.add(p);
-         }
-      }
+      const jogoSet = montarJogo();
 
       if (jogoSet.size < 15) continue;
       const lista = [...jogoSet].slice(0, 15).sort((a, b) => a - b);
@@ -385,7 +449,7 @@ function Index() {
       if (vistas.has(chave)) continue;
 
       // Na primeira metade das tentativas, buscamos jogos "perfeitos" estatisticamente
-      if (tentativas < qtdApostas * 50) {
+      if (otimizar && tentativas < qtdApostas * 50) {
         if (!validarJogoOtimizado(lista)) continue;
       }
 
@@ -794,6 +858,28 @@ function Index() {
           <p className="mt-1 text-xs font-medium text-foreground">
             Para garantir uma probabilidade real de acertos entre 11 e 14 pontos, escolha as opções destacadas:
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <label className="flex flex-wrap items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2">
+              <span className="font-display text-sm tracking-wide text-muted-foreground">
+                Combinação:
+              </span>
+              <select
+                value={estrategiaGeracao}
+                onChange={(e) =>
+                  setEstrategiaGeracao(
+                    e.target.value as "equilibrada" | "quentes" | "atrasadas" | "cobertura",
+                  )
+                }
+                className="bg-transparent font-display text-base tracking-wide outline-none"
+                aria-label="Estratégia de combinação"
+              >
+                <option value="equilibrada">Equilibrada (8 quentes · 5 mornas · 2 frias)</option>
+                <option value="quentes">Foco nas quentes (11 quentes · 4 mornas)</option>
+                <option value="atrasadas">Atrasadas (9 atrasadas · 6 quentes)</option>
+                <option value="cobertura">Cobertura máxima (variação total do painel)</option>
+              </select>
+            </label>
+          </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {OPCOES_APOSTAS.map((op) => (
               <button
