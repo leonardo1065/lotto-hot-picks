@@ -10,6 +10,15 @@ import {
   removerCartoesNuvem,
   type LoteCartoes,
 } from "@/lib/cartoes.functions";
+import {
+  ESTRATEGIAS,
+  CRITERIOS_PADRAO,
+  gerarCartoes,
+  avaliarCartoes,
+  
+  type Criterios,
+  type Estrategia,
+} from "@/lib/estrategias";
 
 
 export const Route = createFileRoute("/")({
@@ -117,26 +126,6 @@ type CartoesSalvos = LoteCartoes;
 
 
 
-// sorteio ponderado: quanto mais a dezena saiu nos concursos, maior a chance
-function sortearPonderado(pool: { n: number; peso: number }[], qtd: number) {
-  const restantes = pool.map((p) => ({ ...p }));
-  const escolhidas: number[] = [];
-  while (escolhidas.length < qtd && restantes.length) {
-    const total = restantes.reduce((a, b) => a + b.peso, 0);
-    let alvo = Math.random() * total;
-    let idx = restantes.length - 1;
-    for (let i = 0; i < restantes.length; i++) {
-      alvo -= restantes[i].peso;
-      if (alvo <= 0) {
-        idx = i;
-        break;
-      }
-    }
-    escolhidas.push(restantes[idx].n);
-    restantes.splice(idx, 1);
-  }
-  return escolhidas;
-}
 
 function Index() {
   const buscar = useServerFn(buscarConcursos);
@@ -156,9 +145,22 @@ function Index() {
   const [salvandoCartoes, setSalvandoCartoes] = useState(false);
 
   const [numSimulacoes, setNumSimulacoes] = useState(100);
-  const [estrategiaGeracao, setEstrategiaGeracao] = useState<
-    "equilibrada" | "quentes" | "atrasadas" | "cobertura"
-  >("equilibrada");
+  const [estrategiaGeracao, setEstrategiaGeracao] = useState<Estrategia>("equilibrada");
+  const [criterios, setCriterios] = useState<Criterios>(CRITERIOS_PADRAO);
+  const [janelaRec, setJanelaRec] = useState(20);
+  const [comparacao, setComparacao] = useState<
+    | {
+        janela: number;
+        linhas: {
+          estrategia: Estrategia;
+          nome: string;
+          resumo: string;
+          porQtd: { qtd: number; chance11: number; chance13: number; chance14: number; media: number; score: number }[];
+        }[];
+        melhor: { estrategia: Estrategia; nome: string; qtd: number; chance11: number; chance13: number; score: number } | null;
+      }
+    | null
+  >(null);
   const listar = useServerFn(listarCartoes);
   const salvarNuvem = useServerFn(salvarCartoesNuvem);
   const removerNuvem = useServerFn(removerCartoesNuvem);
@@ -325,21 +327,78 @@ function Index() {
     setHistoricoAtivas(resto);
   };
 
-  const validarJogoOtimizado = (jogo: number[]) => {
-    const p = jogo.filter((n) => n % 2 === 0).length;
-    // Padrão comum: 7:8 ou 8:7 pares/ímpares
-    if (p < 7 || p > 8) return false;
-    
-    const pr = jogo.filter((n) => PRIMOS.includes(n)).length;
-    // Padrão comum: 5 ou 6 primos
-    if (pr < 5 || pr > 6) return false;
+  const janelaConcursos = useMemo(
+    () => concursos.slice(0, Math.min(janelaRec, concursos.length)),
+    [concursos, janelaRec],
+  );
 
-    const s = jogo.reduce((a, b) => a + b, 0);
-    // Padrão comum: soma entre 180 e 210
-    if (s < 180 || s > 210) return false;
+  const compararEstrategias = () => {
+    if (!concursos.length || ativas.length < 15) {
+      setErro("Selecione ao menos 15 dezenas e aguarde os concursos carregarem.");
+      return;
+    }
+    setErro(null);
+    const base = janelaConcursos.length ? janelaConcursos : concursos;
+    const quantidades = [3, 5, 10, 15];
+    const linhas = ESTRATEGIAS.map((e) => ({
+      estrategia: e.id,
+      nome: e.nome,
+      resumo: e.resumo,
+      porQtd: quantidades.map((qtd) => {
+        const jogos = gerarCartoes({
+          ranking,
+          rankingAtraso,
+          ativas,
+          estrategia: e.id,
+          qtd,
+          criterios,
+        });
+        const av = avaliarCartoes(jogos, base);
+        return {
+          qtd,
+          chance11: av.chance11,
+          chance13: av.chance13,
+          chance14: av.chance14,
+          media: av.media,
+          score: av.score,
+        };
+      }),
+    }));
 
-    return true;
+    let melhor: {
+      estrategia: Estrategia;
+      nome: string;
+      qtd: number;
+      chance11: number;
+      chance13: number;
+      score: number;
+    } | null = null;
+    for (const l of linhas) {
+      for (const c of l.porQtd) {
+        // penaliza levemente quantidades maiores (custo) para uma escolha realista
+        const scoreAjustado = c.score - c.qtd * 0.6;
+        if (!melhor || scoreAjustado > melhor.score) {
+          melhor = {
+            estrategia: l.estrategia,
+            nome: l.nome,
+            qtd: c.qtd,
+            chance11: c.chance11,
+            chance13: c.chance13,
+            score: scoreAjustado,
+          };
+        }
+      }
+    }
+
+    setComparacao({ janela: base.length, linhas, melhor });
   };
+
+  const aplicarRecomendacao = () => {
+    if (!comparacao?.melhor) return;
+    setEstrategiaGeracao(comparacao.melhor.estrategia);
+    setQtdApostas(comparacao.melhor.qtd);
+  };
+
 
   const gerar = () => {
     if (ativas.length < 15) {
@@ -369,97 +428,18 @@ function Index() {
       return;
     }
     setErro(null);
-    const permitidas = new Set(ativas);
-    const poolDe = (lista: { n: number; freq: number }[]) =>
-      lista
-        .filter((r) => permitidas.has(r.n))
-        .map((r) => ({ n: r.n, peso: r.freq + 1 }));
-
-    const poolQuentes = poolDe(quentes);
-    const poolMornas = poolDe(mornas);
-    const poolFrias = poolDe(frias);
-    const poolTodas = poolDe(ranking);
-    const poolAtrasadas = rankingAtraso
-      .filter((r) => permitidas.has(r.n))
-      .map((r) => ({ n: r.n, peso: r.atraso + 1 }));
-
-    const completar = (jogoSet: Set<number>) => {
-      if (jogoSet.size < 15) {
-        const extras = sortearPonderado(poolTodas, poolTodas.length);
-        for (const p of extras) {
-          if (jogoSet.size >= 15) break;
-          jogoSet.add(p);
-        }
-      }
-      return jogoSet;
-    };
-
-    const montarJogo = (): Set<number> => {
-      switch (estrategiaGeracao) {
-        case "quentes":
-          // aposta forte nas dezenas mais frequentes da janela
-          return completar(
-            new Set<number>([
-              ...sortearPonderado(poolQuentes, Math.min(11, poolQuentes.length)),
-              ...sortearPonderado(poolMornas, Math.min(4, poolMornas.length)),
-            ]),
-          );
-        case "atrasadas":
-          // mistura dezenas que estão "na hora de sair" com as quentes
-          return completar(
-            new Set<number>([
-              ...sortearPonderado(poolAtrasadas, Math.min(9, poolAtrasadas.length)),
-              ...sortearPonderado(poolQuentes, Math.min(6, poolQuentes.length)),
-            ]),
-          );
-        case "cobertura":
-          // pesos quase iguais: cada cartão cobre uma fatia diferente do painel
-          return completar(
-            new Set<number>(
-              sortearPonderado(
-                poolTodas.map((p) => ({ n: p.n, peso: Math.sqrt(p.peso) })),
-                15,
-              ),
-            ),
-          );
-        default:
-          return completar(
-            new Set<number>([
-              ...sortearPonderado(poolQuentes, Math.min(8, poolQuentes.length)),
-              ...sortearPonderado(poolMornas, Math.min(5, poolMornas.length)),
-              ...sortearPonderado(poolFrias, Math.min(2, poolFrias.length)),
-            ]),
-          );
-      }
-    };
-
-    const vistas = new Set<string>();
-    const novas: number[][] = [];
-    let tentativas = 0;
-    const otimizar = estrategiaGeracao === "equilibrada" || estrategiaGeracao === "quentes";
-
-    // Tentamos gerar jogos equilibrados (otimizados) primeiro
-    while (novas.length < qtdApostas && tentativas < qtdApostas * 100) {
-      tentativas++;
-      const jogoSet = montarJogo();
-
-      if (jogoSet.size < 15) continue;
-      const lista = [...jogoSet].slice(0, 15).sort((a, b) => a - b);
-      const chave = lista.join("-");
-      if (vistas.has(chave)) continue;
-
-      // Na primeira metade das tentativas, buscamos jogos "perfeitos" estatisticamente
-      if (otimizar && tentativas < qtdApostas * 50) {
-        if (!validarJogoOtimizado(lista)) continue;
-      }
-
-      vistas.add(chave);
-      novas.push(lista);
-    }
-
+    const novas = gerarCartoes({
+      ranking,
+      rankingAtraso,
+      ativas,
+      estrategia: estrategiaGeracao,
+      qtd: qtdApostas,
+      criterios,
+    });
     setApostas(novas);
     setGeradoEm(Date.now());
   };
+
 
 
   // simulação: confronta cada aposta gerada com todos os concursos analisados
@@ -934,6 +914,172 @@ function Index() {
             </strong>{" "}
             (aposta simples de R$ 3,50)
           </p>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-border bg-secondary/40 p-4">
+          <h3 className="font-display text-xl tracking-wide">Critérios de validação das combinações</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Cada cartão só é aceito se respeitar as faixas abaixo e não repetir o padrão dos
+            cartões já gerados.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {(
+              [
+                ["Pares mín.", "paresMin", 0, 15],
+                ["Pares máx.", "paresMax", 0, 15],
+                ["Primos mín.", "primosMin", 0, 9],
+                ["Primos máx.", "primosMax", 0, 9],
+                ["Soma mín.", "somaMin", 120, 260],
+                ["Soma máx.", "somaMax", 120, 300],
+                ["Moldura mín.", "molduraMin", 0, 15],
+                ["Moldura máx.", "molduraMax", 0, 15],
+                ["Sequência máx.", "maxSequencia", 2, 15],
+                ["Dezenas iguais entre cartões (máx.)", "maxRepeticaoEntreCartoes", 8, 15],
+              ] as [string, keyof Criterios, number, number][]
+            ).map(([rotulo, chave, min, max]) => (
+              <label key={chave} className="flex flex-col gap-1">
+                <span className="text-[11px] text-muted-foreground">{rotulo}</span>
+                <input
+                  type="number"
+                  min={min}
+                  max={max}
+                  value={criterios[chave]}
+                  onChange={(e) =>
+                    setCriterios((prev) => ({
+                      ...prev,
+                      [chave]: Math.max(min, Math.min(max, Number(e.target.value) || 0)),
+                    }))
+                  }
+                  className="rounded-lg border border-border bg-input px-3 py-1.5 text-center font-display text-base tracking-wide outline-none focus:border-accent"
+                />
+              </label>
+            ))}
+          </div>
+          <button
+            onClick={() => setCriterios(CRITERIOS_PADRAO)}
+            className="mt-3 rounded-full border border-border px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+          >
+            Restaurar padrão
+          </button>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-accent/40 bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-display text-xl tracking-wide text-accent">
+              Comparar estratégias × quantidade de cartões
+            </h3>
+            <label className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-1.5">
+              <span className="text-xs text-muted-foreground">Últimos</span>
+              <input
+                type="number"
+                min={5}
+                max={100}
+                value={janelaRec}
+                onChange={(e) =>
+                  setJanelaRec(Math.max(5, Math.min(100, Number(e.target.value) || 20)))
+                }
+                className="w-16 bg-transparent text-center font-display text-base tracking-wide outline-none"
+                aria-label="Concursos usados na recomendação"
+              />
+              <span className="text-xs text-muted-foreground">concursos</span>
+            </label>
+            <button
+              onClick={compararEstrategias}
+              disabled={isFetching}
+              className="rounded-full bg-accent px-5 py-2 font-display text-base tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+            >
+              Calcular comparação
+            </button>
+          </div>
+
+          {comparacao ? (
+            <>
+              {comparacao.melhor && (
+                <div className="mt-4 rounded-xl border-2 border-primary bg-primary/10 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
+                        Recomendação automática
+                      </p>
+                      <p className="font-display text-2xl tracking-wide">
+                        {comparacao.melhor.nome} · {comparacao.melhor.qtd} cartões
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Nos últimos {comparacao.janela} concursos: {comparacao.melhor.chance11.toFixed(1)}% das
+                        rodadas com 11+ pontos e {comparacao.melhor.chance13.toFixed(1)}% com 13+.
+                      </p>
+                    </div>
+                    <button
+                      onClick={aplicarRecomendacao}
+                      className="rounded-full bg-primary px-5 py-2 font-display text-base tracking-wide text-primary-foreground"
+                    >
+                      Aplicar recomendação
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead>
+                    <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      <th className="py-2 pr-3">Estratégia</th>
+                      {[3, 5, 10, 15].map((q) => (
+                        <th key={q} className="py-2 pr-3">
+                          {q} cartões
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparacao.linhas.map((l) => (
+                      <tr key={l.estrategia} className="border-t border-border align-top">
+                        <td className="py-2 pr-3">
+                          <p className="font-display text-base tracking-wide">{l.nome}</p>
+                          <p className="text-[11px] text-muted-foreground">{l.resumo}</p>
+                        </td>
+                        {l.porQtd.map((c) => {
+                          const destaque =
+                            comparacao.melhor?.estrategia === l.estrategia &&
+                            comparacao.melhor?.qtd === c.qtd;
+                          return (
+                            <td key={c.qtd} className="py-2 pr-3">
+                              <div
+                                className={`rounded-lg border p-2 ${
+                                  destaque
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border bg-secondary/40"
+                                }`}
+                              >
+                                <p className="font-display text-lg tracking-wide">
+                                  11+: {c.chance11.toFixed(1)}%
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  13+: {c.chance13.toFixed(1)}% · 14+: {c.chance14.toFixed(1)}%
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  média {c.media.toFixed(2)} acertos
+                                </p>
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Percentuais medidos por backtest contra os concursos reais da janela escolhida. São
+                estimativas estatísticas, não garantia de prêmio.
+              </p>
+            </>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Clique em “Calcular comparação” para ver, lado a lado, as chances estimadas de cada
+              estratégia com 3, 5, 10 e 15 cartões.
+            </p>
+          )}
         </div>
 
         {erro && <p className="mt-4 text-sm text-destructive">{erro}</p>}
