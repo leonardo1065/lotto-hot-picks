@@ -916,6 +916,172 @@ function Index() {
           </p>
         </div>
 
+        <div className="mt-6 rounded-xl border border-border bg-secondary/40 p-4">
+          <h3 className="font-display text-xl tracking-wide">Critérios de validação das combinações</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Cada cartão só é aceito se respeitar as faixas abaixo e não repetir o padrão dos
+            cartões já gerados.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {(
+              [
+                ["Pares mín.", "paresMin", 0, 15],
+                ["Pares máx.", "paresMax", 0, 15],
+                ["Primos mín.", "primosMin", 0, 9],
+                ["Primos máx.", "primosMax", 0, 9],
+                ["Soma mín.", "somaMin", 120, 260],
+                ["Soma máx.", "somaMax", 120, 300],
+                ["Moldura mín.", "molduraMin", 0, 15],
+                ["Moldura máx.", "molduraMax", 0, 15],
+                ["Sequência máx.", "maxSequencia", 2, 15],
+                ["Dezenas iguais entre cartões (máx.)", "maxRepeticaoEntreCartoes", 8, 15],
+              ] as [string, keyof Criterios, number, number][]
+            ).map(([rotulo, chave, min, max]) => (
+              <label key={chave} className="flex flex-col gap-1">
+                <span className="text-[11px] text-muted-foreground">{rotulo}</span>
+                <input
+                  type="number"
+                  min={min}
+                  max={max}
+                  value={criterios[chave]}
+                  onChange={(e) =>
+                    setCriterios((prev) => ({
+                      ...prev,
+                      [chave]: Math.max(min, Math.min(max, Number(e.target.value) || 0)),
+                    }))
+                  }
+                  className="rounded-lg border border-border bg-input px-3 py-1.5 text-center font-display text-base tracking-wide outline-none focus:border-accent"
+                />
+              </label>
+            ))}
+          </div>
+          <button
+            onClick={() => setCriterios(CRITERIOS_PADRAO)}
+            className="mt-3 rounded-full border border-border px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+          >
+            Restaurar padrão
+          </button>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-accent/40 bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-display text-xl tracking-wide text-accent">
+              Comparar estratégias × quantidade de cartões
+            </h3>
+            <label className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-1.5">
+              <span className="text-xs text-muted-foreground">Últimos</span>
+              <input
+                type="number"
+                min={5}
+                max={100}
+                value={janelaRec}
+                onChange={(e) =>
+                  setJanelaRec(Math.max(5, Math.min(100, Number(e.target.value) || 20)))
+                }
+                className="w-16 bg-transparent text-center font-display text-base tracking-wide outline-none"
+                aria-label="Concursos usados na recomendação"
+              />
+              <span className="text-xs text-muted-foreground">concursos</span>
+            </label>
+            <button
+              onClick={compararEstrategias}
+              disabled={isFetching}
+              className="rounded-full bg-accent px-5 py-2 font-display text-base tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+            >
+              Calcular comparação
+            </button>
+          </div>
+
+          {comparacao ? (
+            <>
+              {comparacao.melhor && (
+                <div className="mt-4 rounded-xl border-2 border-primary bg-primary/10 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
+                        Recomendação automática
+                      </p>
+                      <p className="font-display text-2xl tracking-wide">
+                        {comparacao.melhor.nome} · {comparacao.melhor.qtd} cartões
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Nos últimos {comparacao.janela} concursos: {comparacao.melhor.chance11.toFixed(1)}% das
+                        rodadas com 11+ pontos e {comparacao.melhor.chance13.toFixed(1)}% com 13+.
+                      </p>
+                    </div>
+                    <button
+                      onClick={aplicarRecomendacao}
+                      className="rounded-full bg-primary px-5 py-2 font-display text-base tracking-wide text-primary-foreground"
+                    >
+                      Aplicar recomendação
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead>
+                    <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      <th className="py-2 pr-3">Estratégia</th>
+                      {[3, 5, 10, 15].map((q) => (
+                        <th key={q} className="py-2 pr-3">
+                          {q} cartões
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparacao.linhas.map((l) => (
+                      <tr key={l.estrategia} className="border-t border-border align-top">
+                        <td className="py-2 pr-3">
+                          <p className="font-display text-base tracking-wide">{l.nome}</p>
+                          <p className="text-[11px] text-muted-foreground">{l.resumo}</p>
+                        </td>
+                        {l.porQtd.map((c) => {
+                          const destaque =
+                            comparacao.melhor?.estrategia === l.estrategia &&
+                            comparacao.melhor?.qtd === c.qtd;
+                          return (
+                            <td key={c.qtd} className="py-2 pr-3">
+                              <div
+                                className={`rounded-lg border p-2 ${
+                                  destaque
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border bg-secondary/40"
+                                }`}
+                              >
+                                <p className="font-display text-lg tracking-wide">
+                                  11+: {c.chance11.toFixed(1)}%
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  13+: {c.chance13.toFixed(1)}% · 14+: {c.chance14.toFixed(1)}%
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  média {c.media.toFixed(2)} acertos
+                                </p>
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Percentuais medidos por backtest contra os concursos reais da janela escolhida. São
+                estimativas estatísticas, não garantia de prêmio.
+              </p>
+            </>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Clique em “Calcular comparação” para ver, lado a lado, as chances estimadas de cada
+              estratégia com 3, 5, 10 e 15 cartões.
+            </p>
+          )}
+        </div>
+
         {erro && <p className="mt-4 text-sm text-destructive">{erro}</p>}
       </section>
 
