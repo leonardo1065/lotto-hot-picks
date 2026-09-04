@@ -165,9 +165,22 @@ function Index() {
   const [salvandoCartoes, setSalvandoCartoes] = useState(false);
 
   const [numSimulacoes, setNumSimulacoes] = useState(100);
-  const [estrategiaGeracao, setEstrategiaGeracao] = useState<
-    "equilibrada" | "quentes" | "atrasadas" | "cobertura"
-  >("equilibrada");
+  const [estrategiaGeracao, setEstrategiaGeracao] = useState<Estrategia>("equilibrada");
+  const [criterios, setCriterios] = useState<Criterios>(CRITERIOS_PADRAO);
+  const [janelaRec, setJanelaRec] = useState(20);
+  const [comparacao, setComparacao] = useState<
+    | {
+        janela: number;
+        linhas: {
+          estrategia: Estrategia;
+          nome: string;
+          resumo: string;
+          porQtd: { qtd: number; chance11: number; chance13: number; chance14: number; media: number; score: number }[];
+        }[];
+        melhor: { estrategia: Estrategia; nome: string; qtd: number; chance11: number; chance13: number; score: number } | null;
+      }
+    | null
+  >(null);
   const listar = useServerFn(listarCartoes);
   const salvarNuvem = useServerFn(salvarCartoesNuvem);
   const removerNuvem = useServerFn(removerCartoesNuvem);
