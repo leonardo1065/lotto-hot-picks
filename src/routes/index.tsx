@@ -126,26 +126,6 @@ type CartoesSalvos = LoteCartoes;
 
 
 
-// sorteio ponderado: quanto mais a dezena saiu nos concursos, maior a chance
-function sortearPonderado(pool: { n: number; peso: number }[], qtd: number) {
-  const restantes = pool.map((p) => ({ ...p }));
-  const escolhidas: number[] = [];
-  while (escolhidas.length < qtd && restantes.length) {
-    const total = restantes.reduce((a, b) => a + b.peso, 0);
-    let alvo = Math.random() * total;
-    let idx = restantes.length - 1;
-    for (let i = 0; i < restantes.length; i++) {
-      alvo -= restantes[i].peso;
-      if (alvo <= 0) {
-        idx = i;
-        break;
-      }
-    }
-    escolhidas.push(restantes[idx].n);
-    restantes.splice(idx, 1);
-  }
-  return escolhidas;
-}
 
 function Index() {
   const buscar = useServerFn(buscarConcursos);
