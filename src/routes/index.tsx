@@ -347,21 +347,78 @@ function Index() {
     setHistoricoAtivas(resto);
   };
 
-  const validarJogoOtimizado = (jogo: number[]) => {
-    const p = jogo.filter((n) => n % 2 === 0).length;
-    // Padrão comum: 7:8 ou 8:7 pares/ímpares
-    if (p < 7 || p > 8) return false;
-    
-    const pr = jogo.filter((n) => PRIMOS.includes(n)).length;
-    // Padrão comum: 5 ou 6 primos
-    if (pr < 5 || pr > 6) return false;
+  const janelaConcursos = useMemo(
+    () => concursos.slice(0, Math.min(janelaRec, concursos.length)),
+    [concursos, janelaRec],
+  );
 
-    const s = jogo.reduce((a, b) => a + b, 0);
-    // Padrão comum: soma entre 180 e 210
-    if (s < 180 || s > 210) return false;
+  const compararEstrategias = () => {
+    if (!concursos.length || ativas.length < 15) {
+      setErro("Selecione ao menos 15 dezenas e aguarde os concursos carregarem.");
+      return;
+    }
+    setErro(null);
+    const base = janelaConcursos.length ? janelaConcursos : concursos;
+    const quantidades = [3, 5, 10, 15];
+    const linhas = ESTRATEGIAS.map((e) => ({
+      estrategia: e.id,
+      nome: e.nome,
+      resumo: e.resumo,
+      porQtd: quantidades.map((qtd) => {
+        const jogos = gerarCartoes({
+          ranking,
+          rankingAtraso,
+          ativas,
+          estrategia: e.id,
+          qtd,
+          criterios,
+        });
+        const av = avaliarCartoes(jogos, base);
+        return {
+          qtd,
+          chance11: av.chance11,
+          chance13: av.chance13,
+          chance14: av.chance14,
+          media: av.media,
+          score: av.score,
+        };
+      }),
+    }));
 
-    return true;
+    let melhor: {
+      estrategia: Estrategia;
+      nome: string;
+      qtd: number;
+      chance11: number;
+      chance13: number;
+      score: number;
+    } | null = null;
+    for (const l of linhas) {
+      for (const c of l.porQtd) {
+        // penaliza levemente quantidades maiores (custo) para uma escolha realista
+        const scoreAjustado = c.score - c.qtd * 0.6;
+        if (!melhor || scoreAjustado > melhor.score) {
+          melhor = {
+            estrategia: l.estrategia,
+            nome: l.nome,
+            qtd: c.qtd,
+            chance11: c.chance11,
+            chance13: c.chance13,
+            score: scoreAjustado,
+          };
+        }
+      }
+    }
+
+    setComparacao({ janela: base.length, linhas, melhor });
   };
+
+  const aplicarRecomendacao = () => {
+    if (!comparacao?.melhor) return;
+    setEstrategiaGeracao(comparacao.melhor.estrategia);
+    setQtdApostas(comparacao.melhor.qtd);
+  };
+
 
   const gerar = () => {
     if (ativas.length < 15) {
