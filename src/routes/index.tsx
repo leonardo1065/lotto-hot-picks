@@ -10,6 +10,15 @@ import {
   removerCartoesNuvem,
   type LoteCartoes,
 } from "@/lib/cartoes.functions";
+import {
+  ESTRATEGIAS,
+  CRITERIOS_PADRAO,
+  gerarCartoes,
+  avaliarCartoes,
+  validarCombinacao,
+  type Criterios,
+  type Estrategia,
+} from "@/lib/estrategias";
 
 
 export const Route = createFileRoute("/")({
