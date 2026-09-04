@@ -51,6 +51,7 @@ const TODAS = Array.from({ length: 25 }, (_, i) => i + 1);
 const OPCOES = [10, 20, 30, 50, 100];
 const OPCOES_APOSTAS = [3, 5, 10, 15, 20];
 const PRECO_CARTAO = 3.5; // valor da aposta simples de 15 dezenas
+const INTERVALO_ATUALIZACAO_RESULTADOS = 60 * 60 * 1000;
 
 function formatarDataHora(ms: number) {
   return new Date(ms).toLocaleString("pt-BR", {
@@ -237,7 +238,10 @@ function Index() {
     queryKey: ["lotofacil", quantidade],
     queryFn: () => buscar({ data: { quantidade } }),
     refetchOnWindowFocus: true,
+    refetchOnReconnect: "always",
     refetchOnMount: "always",
+    refetchInterval: INTERVALO_ATUALIZACAO_RESULTADOS,
+    refetchIntervalInBackground: true,
     staleTime: 0,
   });
 
@@ -605,7 +609,10 @@ function Index() {
     queryKey: ["lotofacil-concurso", numeroAlvo ?? "latest"],
     queryFn: () => buscarUm({ data: { numero: numeroAlvo } }),
     refetchOnWindowFocus: true,
+    refetchOnReconnect: "always",
     refetchOnMount: "always",
+    refetchInterval: INTERVALO_ATUALIZACAO_RESULTADOS,
+    refetchIntervalInBackground: true,
     staleTime: 0,
   });
 
@@ -653,9 +660,9 @@ function Index() {
   useEffect(() => {
     if (concursos.length > 0 && salvos.length > 0 && !conferirId) {
       // Se temos concursos e cartões salvos, mas não estamos conferindo um lote específico,
-      // sugerimos conferir o lote mais recente com o último concurso.
+      // sugerimos conferir o lote mais recente e mantemos a consulta em "último concurso".
       setConferirId(salvos[0].id);
-      setConcursoAlvo(String(concursos[0].concurso));
+      setConcursoAlvo("");
     }
   }, [concursos, salvos, conferirId]);
 
