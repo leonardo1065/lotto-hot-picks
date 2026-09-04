@@ -15,7 +15,7 @@ import {
   CRITERIOS_PADRAO,
   gerarCartoes,
   avaliarCartoes,
-  validarCombinacao,
+  
   type Criterios,
   type Estrategia,
 } from "@/lib/estrategias";
