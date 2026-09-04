@@ -448,97 +448,18 @@ function Index() {
       return;
     }
     setErro(null);
-    const permitidas = new Set(ativas);
-    const poolDe = (lista: { n: number; freq: number }[]) =>
-      lista
-        .filter((r) => permitidas.has(r.n))
-        .map((r) => ({ n: r.n, peso: r.freq + 1 }));
-
-    const poolQuentes = poolDe(quentes);
-    const poolMornas = poolDe(mornas);
-    const poolFrias = poolDe(frias);
-    const poolTodas = poolDe(ranking);
-    const poolAtrasadas = rankingAtraso
-      .filter((r) => permitidas.has(r.n))
-      .map((r) => ({ n: r.n, peso: r.atraso + 1 }));
-
-    const completar = (jogoSet: Set<number>) => {
-      if (jogoSet.size < 15) {
-        const extras = sortearPonderado(poolTodas, poolTodas.length);
-        for (const p of extras) {
-          if (jogoSet.size >= 15) break;
-          jogoSet.add(p);
-        }
-      }
-      return jogoSet;
-    };
-
-    const montarJogo = (): Set<number> => {
-      switch (estrategiaGeracao) {
-        case "quentes":
-          // aposta forte nas dezenas mais frequentes da janela
-          return completar(
-            new Set<number>([
-              ...sortearPonderado(poolQuentes, Math.min(11, poolQuentes.length)),
-              ...sortearPonderado(poolMornas, Math.min(4, poolMornas.length)),
-            ]),
-          );
-        case "atrasadas":
-          // mistura dezenas que estão "na hora de sair" com as quentes
-          return completar(
-            new Set<number>([
-              ...sortearPonderado(poolAtrasadas, Math.min(9, poolAtrasadas.length)),
-              ...sortearPonderado(poolQuentes, Math.min(6, poolQuentes.length)),
-            ]),
-          );
-        case "cobertura":
-          // pesos quase iguais: cada cartão cobre uma fatia diferente do painel
-          return completar(
-            new Set<number>(
-              sortearPonderado(
-                poolTodas.map((p) => ({ n: p.n, peso: Math.sqrt(p.peso) })),
-                15,
-              ),
-            ),
-          );
-        default:
-          return completar(
-            new Set<number>([
-              ...sortearPonderado(poolQuentes, Math.min(8, poolQuentes.length)),
-              ...sortearPonderado(poolMornas, Math.min(5, poolMornas.length)),
-              ...sortearPonderado(poolFrias, Math.min(2, poolFrias.length)),
-            ]),
-          );
-      }
-    };
-
-    const vistas = new Set<string>();
-    const novas: number[][] = [];
-    let tentativas = 0;
-    const otimizar = estrategiaGeracao === "equilibrada" || estrategiaGeracao === "quentes";
-
-    // Tentamos gerar jogos equilibrados (otimizados) primeiro
-    while (novas.length < qtdApostas && tentativas < qtdApostas * 100) {
-      tentativas++;
-      const jogoSet = montarJogo();
-
-      if (jogoSet.size < 15) continue;
-      const lista = [...jogoSet].slice(0, 15).sort((a, b) => a - b);
-      const chave = lista.join("-");
-      if (vistas.has(chave)) continue;
-
-      // Na primeira metade das tentativas, buscamos jogos "perfeitos" estatisticamente
-      if (otimizar && tentativas < qtdApostas * 50) {
-        if (!validarJogoOtimizado(lista)) continue;
-      }
-
-      vistas.add(chave);
-      novas.push(lista);
-    }
-
+    const novas = gerarCartoes({
+      ranking,
+      rankingAtraso,
+      ativas,
+      estrategia: estrategiaGeracao,
+      qtd: qtdApostas,
+      criterios,
+    });
     setApostas(novas);
     setGeradoEm(Date.now());
   };
+
 
 
   // simulação: confronta cada aposta gerada com todos os concursos analisados
