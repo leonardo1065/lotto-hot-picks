@@ -134,7 +134,7 @@ function Index() {
   const [ativas, setAtivas] = useState<number[]>(TODAS);
   const [historicoAtivas, setHistoricoAtivas] = useState<number[][]>([]);
   const [geradas, setGeradas] = useState<number[]>([]);
-  const [qtdApostas, setQtdApostas] = useState(5);
+  const [qtdApostas, setQtdApostas] = useState(15);
   const [apostas, setApostas] = useState<number[][]>([]);
   const [geradoEm, setGeradoEm] = useState<number | null>(null);
   const [geradasEm, setGeradasEm] = useState<number | null>(null);
@@ -636,6 +636,28 @@ function Index() {
       media: linhas.reduce((a, l) => a + l.acertos, 0) / linhas.length,
     };
   }, [cartaoConferido, sorteioOficial]);
+
+  const conferenciaCartoesGerados = useMemo(() => {
+    if (!apostas.length || !sorteioOficial) return null;
+    const dezenasSorteadas = new Set(sorteioOficial.dezenas);
+    const rankingCartoes = apostas
+      .map((jogo, indice) => {
+        const acertadas = jogo.filter((dezena) => dezenasSorteadas.has(dezena));
+        return {
+          indice: indice + 1,
+          jogo,
+          acertadas,
+          acertos: acertadas.length,
+        };
+      })
+      .sort((a, b) => b.acertos - a.acertos || a.indice - b.indice);
+
+    return {
+      ranking: rankingCartoes,
+      premiados: rankingCartoes.filter((cartao) => cartao.acertos >= 11).length,
+      melhor: rankingCartoes[0]?.acertos ?? 0,
+    };
+  }, [apostas, sorteioOficial]);
 
 
 
@@ -1165,6 +1187,90 @@ function Index() {
             {salvandoCartoes ? "Salvando na nuvem..." : "Salvar estes cartões para conferir"}
           </button>
 
+        </section>
+      )}
+
+      {conferenciaCartoesGerados && sorteioOficial && (
+        <section className="mt-6 rounded-2xl border-2 border-primary bg-card p-5 shadow-panel">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase text-primary">Conferência automática</p>
+              <h2 className="font-display text-2xl tracking-wide">
+                Ranking dos {apostas.length} cartões gerados
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Concurso atual #{sorteioOficial.concurso} · {sorteioOficial.data}
+              </p>
+            </div>
+            <div className="rounded-lg border border-primary bg-primary/10 px-4 py-2 text-right">
+              <p className="text-[11px] text-muted-foreground">Melhor resultado</p>
+              <p className="font-display text-2xl text-primary">
+                {conferenciaCartoesGerados.melhor} acertos
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-[11px] text-muted-foreground">Cartões conferidos</p>
+              <p className="font-display text-2xl">{apostas.length}</p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-[11px] text-muted-foreground">Cartões premiados</p>
+              <p className="font-display text-2xl text-accent">
+                {conferenciaCartoesGerados.premiados}
+              </p>
+            </div>
+            <div className="col-span-2 rounded-lg border border-border p-3 sm:col-span-1">
+              <p className="text-[11px] text-muted-foreground">Faixa premiada</p>
+              <p className="font-display text-2xl">11 a 15 acertos</p>
+            </div>
+          </div>
+
+          <ol className="mt-4 space-y-3">
+            {conferenciaCartoesGerados.ranking.map((cartao, posicao) => (
+              <li
+                key={cartao.jogo.join("-")}
+                className={`rounded-xl border p-3 ${
+                  cartao.acertos >= 11
+                    ? "border-accent bg-accent/10"
+                    : posicao === 0
+                      ? "border-primary bg-primary/10"
+                      : "border-border"
+                }`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-display text-lg tracking-wide">
+                    {posicao + 1}º lugar · Cartão {cartao.indice}
+                  </span>
+                  <span
+                    className={`font-display text-xl ${
+                      cartao.acertos >= 11 ? "text-accent" : "text-foreground"
+                    }`}
+                  >
+                    {cartao.acertos} acertos{cartao.acertos >= 11 ? " · PREMIADO" : ""}
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-5 gap-2 sm:grid-cols-8">
+                  {cartao.jogo.map((dezena) => {
+                    const acertou = cartao.acertadas.includes(dezena);
+                    return (
+                      <div
+                        key={dezena}
+                        className={`ball-base w-full border text-xl ${
+                          acertou
+                            ? "border-accent bg-accent text-accent-foreground"
+                            : "border-border bg-secondary text-muted-foreground"
+                        }`}
+                      >
+                        {String(dezena).padStart(2, "0")}
+                      </div>
+                    );
+                  })}
+                </div>
+              </li>
+            ))}
+          </ol>
         </section>
       )}
 
