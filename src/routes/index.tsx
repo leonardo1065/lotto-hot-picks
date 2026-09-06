@@ -647,15 +647,27 @@ function Index() {
     const faixas: Record<number, number> = { 11: 0, 12: 0, 13: 0, 14: 0, 15: 0 };
     const porConcurso = usados.map((c) => {
       const set = new Set(c.dezenas);
-      const acertos = jogos.map((j) => j.filter((n) => set.has(n)).length);
-      for (const a of acertos) if (a >= 11) faixas[a] += 1;
-      const melhor = Math.max(...acertos);
+      const cartoes = jogos
+        .map((jogo, indice) => {
+          const acertadas = jogo.filter((n) => set.has(n));
+          return {
+            indice: indice + 1,
+            jogo,
+            acertadas,
+            acertos: acertadas.length,
+          };
+        })
+        .sort((a, b) => b.acertos - a.acertos || a.indice - b.indice);
+      for (const cartao of cartoes) if (cartao.acertos >= 11) faixas[cartao.acertos] += 1;
+      const melhor = cartoes[0]?.acertos ?? 0;
       return {
         concurso: c.concurso,
-        data: (c as { data?: string }).data ?? "",
+        data: c.data,
+        dezenas: [...c.dezenas].sort((a, b) => a - b),
+        cartoes,
         melhor,
-        premiados: acertos.filter((a) => a >= 11).length,
-        media: acertos.reduce((x, y) => x + y, 0) / acertos.length,
+        premiados: cartoes.filter((cartao) => cartao.acertos >= 11).length,
+        media: cartoes.reduce((total, cartao) => total + cartao.acertos, 0) / cartoes.length,
       };
     });
     const premiados = FAIXAS.reduce((a, f) => a + faixas[f], 0);
@@ -1380,23 +1392,77 @@ function Index() {
                 </span>
               ))}
             </div>
-            <ul className="mt-4 space-y-2 text-sm">
+            <div className="mt-4 space-y-3 text-sm">
               {conferenciaAnteriores.porConcurso.map((c) => (
-                <li
+                <details
                   key={c.concurso}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3"
+                  className="group rounded-xl border border-border bg-secondary/30 p-3 open:border-primary"
                 >
-                  <span>
-                    Concurso {c.concurso}
-                    {c.data ? ` · ${c.data}` : ""}
-                  </span>
-                  <span className={c.melhor >= 11 ? "text-accent" : "text-muted-foreground"}>
-                    melhor {c.melhor} acertos · média {c.media.toFixed(2)} ·{" "}
-                    {c.premiados} premiados
-                  </span>
-                </li>
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
+                    <span className="font-display text-lg tracking-wide">
+                      Concurso {c.concurso}{c.data ? ` · ${c.data}` : ""}
+                    </span>
+                    <span className={c.melhor >= 11 ? "font-semibold text-accent" : "text-muted-foreground"}>
+                      melhor {c.melhor} · média {c.media.toFixed(2)} · {c.premiados} premiados
+                    </span>
+                  </summary>
+
+                  <div className="mt-4 border-t border-border pt-4">
+                    <p className="text-[11px] uppercase text-muted-foreground">Dezenas sorteadas</p>
+                    <div className="mt-2 grid max-w-2xl grid-cols-5 gap-2 sm:grid-cols-8">
+                      {c.dezenas.map((dezena) => (
+                        <div
+                          key={dezena}
+                          className="ball-base w-full border border-accent bg-accent text-xl text-accent-foreground"
+                        >
+                          {String(dezena).padStart(2, "0")}
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="mt-5 text-[11px] uppercase text-muted-foreground">
+                      Seus cartões — do maior para o menor número de acertos
+                    </p>
+                    <ol className="mt-2 space-y-2">
+                      {c.cartoes.map((cartao, posicao) => (
+                        <li
+                          key={`${c.concurso}-${cartao.indice}`}
+                          className={`rounded-xl border p-3 ${
+                            cartao.acertos >= 11 ? "border-accent bg-accent/10" : "border-border"
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-semibold">
+                              {posicao + 1}º · Cartão {cartao.indice}
+                            </span>
+                            <span className={cartao.acertos >= 11 ? "font-semibold text-accent" : "text-muted-foreground"}>
+                              {cartao.acertos} acertos{cartao.acertos >= 11 ? " · PREMIADO" : ""}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {cartao.jogo.map((dezena) => {
+                              const acertou = cartao.acertadas.includes(dezena);
+                              return (
+                                <span
+                                  key={dezena}
+                                  className={`inline-flex size-8 items-center justify-center rounded-full border font-display text-base ${
+                                    acertou
+                                      ? "border-accent bg-accent text-accent-foreground"
+                                      : "border-border bg-secondary text-muted-foreground"
+                                  }`}
+                                >
+                                  {String(dezena).padStart(2, "0")}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </details>
               ))}
-            </ul>
+            </div>
           </div>
         )}
 
