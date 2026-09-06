@@ -144,6 +144,8 @@ function Index() {
   const [conferirId, setConferirId] = useState<string | null>(null);
   const [concursoAlvo, setConcursoAlvo] = useState<string>("");
   const [salvandoCartoes, setSalvandoCartoes] = useState(false);
+  const [retroAtivo, setRetroAtivo] = useState(false);
+  const [janelaRetro, setJanelaRetro] = useState(20);
 
   const [numSimulacoes, setNumSimulacoes] = useState(100);
   const [estrategiaGeracao, setEstrategiaGeracao] = useState<Estrategia>("equilibrada");
