@@ -1327,6 +1327,79 @@ function Index() {
           </button>
         )}
 
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <label className="text-sm">
+            <span className="block text-[11px] text-muted-foreground">
+              Concursos anteriores para conferir
+            </span>
+            <select
+              value={janelaRetro}
+              onChange={(e) => setJanelaRetro(Number(e.target.value))}
+              className="mt-1 rounded-xl border border-border bg-secondary px-3 py-2 text-foreground"
+            >
+              {[10, 20, 30, 50, 100].map((n) => (
+                <option key={n} value={n}>
+                  últimos {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            onClick={async () => {
+              if (apostas.length > 0 || geradas.length === 15) await salvarCartoes();
+              setRetroAtivo(true);
+            }}
+            disabled={salvandoCartoes}
+            className="rounded-full bg-primary px-6 py-3 font-display text-lg tracking-wide text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+          >
+            Salvar e conferir nos concursos anteriores
+          </button>
+          {retroAtivo && (
+            <button
+              onClick={() => setRetroAtivo(false)}
+              className="rounded-full border border-border px-5 py-2 text-sm"
+            >
+              ocultar
+            </button>
+          )}
+        </div>
+
+        {conferenciaAnteriores && (
+          <div className="mt-5 rounded-2xl border-2 border-primary p-4">
+            <h3 className="font-display text-xl tracking-wide">
+              Acertos nos {conferenciaAnteriores.concursosUsados} concursos anteriores
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {conferenciaAnteriores.jogosConferidos} cartões conferidos ·{" "}
+              {conferenciaAnteriores.premiados} premiações de 11+ pontos
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              {FAIXAS.map((f) => (
+                <span key={f} className="rounded-full border border-border px-3 py-1">
+                  {f} acertos: <strong>{conferenciaAnteriores.faixas[f]}</strong>
+                </span>
+              ))}
+            </div>
+            <ul className="mt-4 space-y-2 text-sm">
+              {conferenciaAnteriores.porConcurso.map((c) => (
+                <li
+                  key={c.concurso}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3"
+                >
+                  <span>
+                    Concurso {c.concurso}
+                    {c.data ? ` · ${c.data}` : ""}
+                  </span>
+                  <span className={c.melhor >= 11 ? "text-accent" : "text-muted-foreground"}>
+                    melhor {c.melhor} acertos · média {c.media.toFixed(2)} ·{" "}
+                    {c.premiados} premiados
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
 
 
 
