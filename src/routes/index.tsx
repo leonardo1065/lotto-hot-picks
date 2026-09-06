@@ -639,6 +639,36 @@ function Index() {
     };
   }, [cartaoConferido, sorteioOficial]);
 
+  const conferenciaAnteriores = useMemo(() => {
+    if (!retroAtivo) return null;
+    const jogos = cartaoConferido?.jogos ?? apostas;
+    if (!jogos.length || concursos.length === 0) return null;
+    const usados = concursos.slice(0, Math.min(janelaRetro, concursos.length));
+    const faixas: Record<number, number> = { 11: 0, 12: 0, 13: 0, 14: 0, 15: 0 };
+    const porConcurso = usados.map((c) => {
+      const set = new Set(c.dezenas);
+      const acertos = jogos.map((j) => j.filter((n) => set.has(n)).length);
+      for (const a of acertos) if (a >= 11) faixas[a] += 1;
+      const melhor = Math.max(...acertos);
+      return {
+        concurso: c.concurso,
+        data: (c as { data?: string }).data ?? "",
+        melhor,
+        premiados: acertos.filter((a) => a >= 11).length,
+        media: acertos.reduce((x, y) => x + y, 0) / acertos.length,
+      };
+    });
+    const premiados = FAIXAS.reduce((a, f) => a + faixas[f], 0);
+    return {
+      jogosConferidos: jogos.length,
+      concursosUsados: usados.length,
+      faixas,
+      premiados,
+      porConcurso: [...porConcurso].sort((a, b) => b.melhor - a.melhor || b.concurso - a.concurso),
+    };
+  }, [retroAtivo, cartaoConferido, apostas, concursos, janelaRetro]);
+
+
   const conferenciaCartoesGerados = useMemo(() => {
     if (!apostas.length || !sorteioOficial) return null;
     const dezenasSorteadas = new Set(sorteioOficial.dezenas);
