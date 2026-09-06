@@ -15,7 +15,7 @@ import {
   CRITERIOS_PADRAO,
   gerarCartoes,
   avaliarCartoes,
-  
+  calcularPesosDinamicos,
   type Criterios,
   type Estrategia,
 } from "@/lib/estrategias";
@@ -288,6 +288,31 @@ function Index() {
     [atrasos],
   );
 
+  const rankingDinamico = useMemo(() => {
+    const tamanhoRecente = Math.max(1, Math.ceil(concursos.length * 0.35));
+    const recentes = concursos.slice(0, tamanhoRecente);
+    const anteriores = concursos.slice(tamanhoRecente);
+    const pesosRecentes = recentes.map((_, indice) => Math.pow(0.88, indice));
+    const totalPesoRecente = pesosRecentes.reduce((total, peso) => total + peso, 0) || 1;
+
+    return ranking.map((item) => {
+      const aparicoesRecentes = recentes.filter((c) => c.dezenas.includes(item.n)).length;
+      const aparicoesAnteriores = anteriores.filter((c) => c.dezenas.includes(item.n)).length;
+      const taxaRecente = aparicoesRecentes / Math.max(1, recentes.length);
+      const taxaAnterior = aparicoesAnteriores / Math.max(1, anteriores.length);
+      const recencia = recentes.reduce(
+        (total, c, indice) => total + (c.dezenas.includes(item.n) ? pesosRecentes[indice] : 0),
+        0,
+      ) / totalPesoRecente;
+      return { ...item, tendencia: taxaRecente - taxaAnterior, recencia };
+    });
+  }, [concursos, ranking]);
+
+  const perfilDinamico = useMemo(
+    () => calcularPesosDinamicos(rankingDinamico, rankingAtraso),
+    [rankingDinamico, rankingAtraso],
+  );
+
   const sugestaoEstrategica = useMemo(() => {
     if (!concursos.length) return [] as number[];
     const permitidas = new Set(ativas);
@@ -352,7 +377,7 @@ function Index() {
       resumo: e.resumo,
       porQtd: quantidades.map((qtd) => {
         const jogos = gerarCartoes({
-          ranking,
+          ranking: rankingDinamico,
           rankingAtraso,
           ativas,
           estrategia: e.id,
@@ -435,7 +460,7 @@ function Index() {
     }
     setErro(null);
     const novas = gerarCartoes({
-      ranking,
+      ranking: rankingDinamico,
       rankingAtraso,
       ativas,
       estrategia: estrategiaGeracao,
