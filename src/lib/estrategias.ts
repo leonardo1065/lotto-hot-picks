@@ -4,11 +4,75 @@ export const MOLDURA = [1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25
 export type Estrategia = "equilibrada" | "quentes" | "atrasadas" | "cobertura";
 
 export const ESTRATEGIAS: { id: Estrategia; nome: string; resumo: string }[] = [
-  { id: "equilibrada", nome: "Equilibrada", resumo: "8 quentes · 5 mornas · 2 frias" },
-  { id: "quentes", nome: "Foco nas quentes", resumo: "11 quentes · 4 mornas" },
-  { id: "atrasadas", nome: "Atrasadas", resumo: "9 atrasadas · 6 quentes" },
-  { id: "cobertura", nome: "Cobertura máxima", resumo: "variação total do painel" },
+  { id: "equilibrada", nome: "Equilibrada", resumo: "pesos dinâmicos · 8 quentes · 5 mornas · 2 frias" },
+  { id: "quentes", nome: "Foco nas quentes", resumo: "pesos dinâmicos · 11 quentes · 4 mornas" },
+  { id: "atrasadas", nome: "Atrasadas", resumo: "atraso controlado · 9 atrasadas · 6 quentes" },
+  { id: "cobertura", nome: "Cobertura máxima", resumo: "pesos suavizados em todo o painel" },
 ];
+
+export type ItemRanking = {
+  n: number;
+  freq: number;
+  tendencia?: number;
+  recencia?: number;
+};
+
+export type FaixaDinamica = "quentes" | "mornas" | "frias";
+
+export type PerfilPesosDinamicos = {
+  itens: { n: number; peso: number; faixa: FaixaDinamica }[];
+  grupos: Record<FaixaDinamica, { multiplicador: number; mediaFrequencia: number }>;
+};
+
+const limitar = (valor: number, minimo: number, maximo: number) =>
+  Math.max(minimo, Math.min(maximo, valor));
+
+export function calcularPesosDinamicos(
+  ranking: ItemRanking[],
+  rankingAtraso: { n: number; atraso: number }[],
+): PerfilPesosDinamicos {
+  const ordenadoPorFrequencia = [...ranking].sort((a, b) => b.freq - a.freq || a.n - b.n);
+  const faixaPorNumero = new Map<number, FaixaDinamica>();
+  ordenadoPorFrequencia.forEach((item, indice) => {
+    faixaPorNumero.set(item.n, indice < 8 ? "quentes" : indice < 17 ? "mornas" : "frias");
+  });
+
+  const frequenciaMedia =
+    ranking.reduce((total, item) => total + item.freq, 0) / Math.max(1, ranking.length);
+  const atrasoPorNumero = new Map(rankingAtraso.map((item) => [item.n, item.atraso]));
+  const atrasoMaximo = Math.max(1, ...rankingAtraso.map((item) => item.atraso));
+  const gruposBase = { quentes: [] as ItemRanking[], mornas: [] as ItemRanking[], frias: [] as ItemRanking[] };
+  for (const item of ranking) gruposBase[faixaPorNumero.get(item.n) ?? "mornas"].push(item);
+
+  const grupos = Object.fromEntries(
+    (Object.keys(gruposBase) as FaixaDinamica[]).map((faixa) => {
+      const itens = gruposBase[faixa];
+      const mediaFrequencia = itens.reduce((total, item) => total + item.freq, 0) / Math.max(1, itens.length);
+      const tendenciaMedia =
+        itens.reduce((total, item) => total + (item.tendencia ?? 0), 0) / Math.max(1, itens.length);
+      const forcaRelativa = frequenciaMedia > 0 ? mediaFrequencia / frequenciaMedia : 1;
+      const multiplicador = limitar(forcaRelativa + tendenciaMedia * 0.8, 0.65, 1.65);
+      return [faixa, { multiplicador, mediaFrequencia }];
+    }),
+  ) as PerfilPesosDinamicos["grupos"];
+
+  const frequenciaMaxima = Math.max(1, ...ranking.map((item) => item.freq));
+  const itens = ranking
+    .map((item) => {
+      const faixa = faixaPorNumero.get(item.n) ?? "mornas";
+      const frequencia = item.freq / frequenciaMaxima;
+      const tendencia = limitar(item.tendencia ?? 0, -1, 1);
+      const recencia = limitar(item.recencia ?? frequencia, 0, 1);
+      const atraso = (atrasoPorNumero.get(item.n) ?? 0) / atrasoMaximo;
+      // Frequência e presença recente dominam. Tendência reforça dezenas em alta;
+      // atraso tem influência menor para não tratar ausência passada como garantia futura.
+      const base = 1 + frequencia * 4.5 + recencia * 2 + tendencia * 1.5 + atraso * 0.45;
+      return { n: item.n, faixa, peso: Math.max(0.2, base * grupos[faixa].multiplicador) };
+    })
+    .sort((a, b) => b.peso - a.peso || a.n - b.n);
+
+  return { itens, grupos };
+}
 
 export type Criterios = {
   paresMin: number;
@@ -84,7 +148,7 @@ function sortearPonderado(pool: { n: number; peso: number }[], qtd: number) {
 }
 
 export type EntradaGeracao = {
-  ranking: { n: number; freq: number }[];
+  ranking: ItemRanking[];
   rankingAtraso: { n: number; atraso: number }[];
   ativas: number[];
   estrategia: Estrategia;
@@ -101,16 +165,22 @@ export function gerarCartoes({
   criterios,
 }: EntradaGeracao): number[][] {
   const permitidas = new Set(ativas);
-  const poolDe = (lista: { n: number; freq: number }[]) =>
-    lista.filter((r) => permitidas.has(r.n)).map((r) => ({ n: r.n, peso: r.freq + 1 }));
+  const perfil = calcularPesosDinamicos(ranking, rankingAtraso);
+  const poolDe = (faixa?: FaixaDinamica) =>
+    perfil.itens
+      .filter((item) => permitidas.has(item.n) && (!faixa || item.faixa === faixa))
+      .map((item) => ({ n: item.n, peso: item.peso }));
 
-  const poolQuentes = poolDe(ranking.slice(0, 8));
-  const poolMornas = poolDe(ranking.slice(8, 17));
-  const poolFrias = poolDe(ranking.slice(17));
-  const poolTodas = poolDe(ranking);
+  const poolQuentes = poolDe("quentes");
+  const poolMornas = poolDe("mornas");
+  const poolFrias = poolDe("frias");
+  const poolTodas = poolDe();
   const poolAtrasadas = rankingAtraso
     .filter((r) => permitidas.has(r.n))
-    .map((r) => ({ n: r.n, peso: r.atraso + 1 }));
+    .map((r) => {
+      const dinamico = perfil.itens.find((item) => item.n === r.n)?.peso ?? 1;
+      return { n: r.n, peso: dinamico * (1 + Math.min(r.atraso, 5) * 0.12) };
+    });
 
   const completar = (jogoSet: Set<number>) => {
     if (jogoSet.size < 15) {

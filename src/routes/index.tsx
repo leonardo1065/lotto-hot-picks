@@ -15,7 +15,7 @@ import {
   CRITERIOS_PADRAO,
   gerarCartoes,
   avaliarCartoes,
-  
+  calcularPesosDinamicos,
   type Criterios,
   type Estrategia,
 } from "@/lib/estrategias";
@@ -288,6 +288,31 @@ function Index() {
     [atrasos],
   );
 
+  const rankingDinamico = useMemo(() => {
+    const tamanhoRecente = Math.max(1, Math.ceil(concursos.length * 0.35));
+    const recentes = concursos.slice(0, tamanhoRecente);
+    const anteriores = concursos.slice(tamanhoRecente);
+    const pesosRecentes = recentes.map((_, indice) => Math.pow(0.88, indice));
+    const totalPesoRecente = pesosRecentes.reduce((total, peso) => total + peso, 0) || 1;
+
+    return ranking.map((item) => {
+      const aparicoesRecentes = recentes.filter((c) => c.dezenas.includes(item.n)).length;
+      const aparicoesAnteriores = anteriores.filter((c) => c.dezenas.includes(item.n)).length;
+      const taxaRecente = aparicoesRecentes / Math.max(1, recentes.length);
+      const taxaAnterior = aparicoesAnteriores / Math.max(1, anteriores.length);
+      const recencia = recentes.reduce(
+        (total, c, indice) => total + (c.dezenas.includes(item.n) ? pesosRecentes[indice] : 0),
+        0,
+      ) / totalPesoRecente;
+      return { ...item, tendencia: taxaRecente - taxaAnterior, recencia };
+    });
+  }, [concursos, ranking]);
+
+  const perfilDinamico = useMemo(
+    () => calcularPesosDinamicos(rankingDinamico, rankingAtraso),
+    [rankingDinamico, rankingAtraso],
+  );
+
   const sugestaoEstrategica = useMemo(() => {
     if (!concursos.length) return [] as number[];
     const permitidas = new Set(ativas);
@@ -352,7 +377,7 @@ function Index() {
       resumo: e.resumo,
       porQtd: quantidades.map((qtd) => {
         const jogos = gerarCartoes({
-          ranking,
+          ranking: rankingDinamico,
           rankingAtraso,
           ativas,
           estrategia: e.id,
@@ -435,7 +460,7 @@ function Index() {
     }
     setErro(null);
     const novas = gerarCartoes({
-      ranking,
+      ranking: rankingDinamico,
       rankingAtraso,
       ativas,
       estrategia: estrategiaGeracao,
@@ -933,6 +958,39 @@ function Index() {
               </select>
             </label>
           </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {(
+              [
+                ["quentes", "Quentes"],
+                ["mornas", "Mornas"],
+                ["frias", "Frias"],
+              ] as const
+            ).map(([faixa, rotulo]) => {
+              const grupo = perfilDinamico.grupos[faixa];
+              const melhores = perfilDinamico.itens
+                .filter((item) => item.faixa === faixa)
+                .slice(0, 4)
+                .map((item) => String(item.n).padStart(2, "0"))
+                .join(" · ");
+              return (
+                <div key={faixa} className="rounded-lg border border-border bg-secondary/50 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold">{rotulo}</span>
+                    <span className="font-display text-lg tracking-wide text-primary">
+                      peso {grupo.multiplicador.toFixed(2)}×
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Destaques: {melhores || "aguardando resultados"}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Os pesos são recalculados automaticamente com os concursos analisados, combinando
+            frequência geral, presença recente, tendência e atraso controlado.
+          </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {OPCOES_APOSTAS.map((op) => (
               <button
