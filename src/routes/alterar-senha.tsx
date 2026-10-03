@@ -1,7 +1,12 @@
 import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { alterarCredenciais, exigirAcesso } from "@/lib/gate.functions";
+import { useEffect, useState } from "react";
+import {
+  alterarCredenciais,
+  exigirAcesso,
+  gerarCodigoRecuperacao,
+  statusCodigoRecuperacao,
+} from "@/lib/gate.functions";
 
 export const Route = createFileRoute("/alterar-senha")({
   beforeLoad: async () => {
@@ -169,6 +174,59 @@ function AlterarSenha() {
           Voltar ao painel
         </Link>
       </form>
+      <CodigoSecreto />
     </main>
+  );
+}
+
+function CodigoSecreto() {
+  const gerar = useServerFn(gerarCodigoRecuperacao);
+  const status = useServerFn(statusCodigoRecuperacao);
+  const [existe, setExiste] = useState<boolean | null>(null);
+  const [codigo, setCodigo] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    status().then((r) => setExiste(r.existe)).catch(() => setExiste(null));
+  }, [status]);
+
+  async function onGerar() {
+    if (existe && !window.confirm("Gerar um novo código? O código antigo deixará de funcionar.")) return;
+    setErro(null);
+    try {
+      const r = await gerar();
+      if (r.ok) {
+        setCodigo(r.codigo);
+        setExiste(true);
+      } else setErro(r.erro);
+    } catch {
+      setErro("Não foi possível gerar o código.");
+    }
+  }
+
+  return (
+    <section className="mt-10 rounded-2xl border border-border p-4">
+      <h2 className="font-display text-2xl tracking-wide">Código secreto de recuperação</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Se esquecer o login ou a senha, use este código na tela de entrada em "Esqueci meu login ou
+        senha". Ele aparece só uma vez: anote e guarde em lugar seguro.
+      </p>
+      <p className="mt-2 text-xs text-muted-foreground">
+        {existe === null ? "" : existe ? "Você já tem um código ativo." : "Nenhum código gerado ainda."}
+      </p>
+      {codigo && (
+        <p className="mt-3 select-all rounded-xl border border-accent bg-secondary p-3 text-center font-mono text-xl tracking-widest text-accent">
+          {codigo}
+        </p>
+      )}
+      {erro && <p className="mt-2 text-sm text-destructive">{erro}</p>}
+      <button
+        type="button"
+        onClick={onGerar}
+        className="mt-3 w-full rounded-full border border-accent px-6 py-3 font-display text-lg tracking-wide"
+      >
+        {existe ? "Gerar novo código" : "Gerar código secreto"}
+      </button>
+    </section>
   );
 }

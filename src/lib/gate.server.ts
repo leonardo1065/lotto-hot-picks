@@ -128,3 +128,58 @@ export async function exigirAcessoServidor() {
   if (usuario === null) throw new Error("Acesso não autorizado");
   return usuario;
 }
+
+function normalizarCodigo(c: string) {
+  return c.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+/** Gera um novo código secreto (mostrado uma única vez) e guarda só o hash. */
+export async function gerarCodigoRecuperacaoServidor(usuarioAtual: string) {
+  const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  const bruto = [...bytes].map((b) => alfabeto[b % alfabeto.length]).join("");
+  const codigo = bruto.match(/.{4}/g)!.join("-");
+  const codigo_salt = novoSalt();
+  const codigo_hash = await derivarHash(normalizarCodigo(codigo), codigo_salt);
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const salvas = await credenciaisSalvas();
+  if (!salvas) {
+    const p = process.env.SITE_PASSWORD;
+    if (!p) throw new Error("Credenciais do app não configuradas");
+    await salvarCredenciais(usuarioAtual || process.env.SITE_USER || "admin", p);
+  }
+  const { error } = await supabaseAdmin
+    .from("app_credenciais")
+    .update({ codigo_hash, codigo_salt })
+    .eq("id", "default");
+  if (error) throw new Error(error.message);
+  return codigo;
+}
+
+export async function temCodigoRecuperacao() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("app_credenciais")
+    .select("codigo_hash")
+    .eq("id", "default")
+    .maybeSingle();
+  return Boolean(data?.codigo_hash);
+}
+
+/** Confere o código; se válido, devolve o login atual e invalida o código. */
+export async function usarCodigoRecuperacao(codigo: string): Promise<string | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("app_credenciais")
+    .select("usuario, codigo_hash, codigo_salt")
+    .eq("id", "default")
+    .maybeSingle();
+  if (!data?.codigo_hash || !data.codigo_salt) return null;
+  const hash = await derivarHash(normalizarCodigo(codigo), data.codigo_salt);
+  if (!matches(hash, data.codigo_hash)) return null;
+  await supabaseAdmin
+    .from("app_credenciais")
+    .update({ codigo_hash: null, codigo_salt: null })
+    .eq("id", "default");
+  return data.usuario;
+}

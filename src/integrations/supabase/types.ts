@@ -17,6 +17,8 @@ export type Database = {
       app_credenciais: {
         Row: {
           atualizado_em: string
+          codigo_hash: string | null
+          codigo_salt: string | null
           id: string
           senha_hash: string
           senha_salt: string
@@ -24,6 +26,8 @@ export type Database = {
         }
         Insert: {
           atualizado_em?: string
+          codigo_hash?: string | null
+          codigo_salt?: string | null
           id?: string
           senha_hash: string
           senha_salt: string
@@ -31,6 +35,8 @@ export type Database = {
         }
         Update: {
           atualizado_em?: string
+          codigo_hash?: string | null
+          codigo_salt?: string | null
           id?: string
           senha_hash?: string
           senha_salt?: string

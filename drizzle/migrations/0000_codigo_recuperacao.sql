@@ -1,0 +1,1 @@
+ALTER TABLE public.app_credenciais ADD COLUMN IF NOT EXISTS codigo_hash text, ADD COLUMN IF NOT EXISTS codigo_salt text;

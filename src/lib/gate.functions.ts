@@ -69,3 +69,40 @@ export const alterarCredenciais = createServerFn({ method: "POST" })
     return { ok: true as const, erro: undefined };
   });
 
+
+export const gerarCodigoRecuperacao = createServerFn({ method: "POST" }).handler(async () => {
+  const { gerarCodigoRecuperacaoServidor, usuarioDaSessao: sessao } = await import("./gate.server");
+  const usuario = await sessao();
+  if (usuario === null) return { ok: false as const, erro: "Sessão expirada. Entre novamente." };
+  const codigo = await gerarCodigoRecuperacaoServidor(usuario);
+  return { ok: true as const, codigo };
+});
+
+export const statusCodigoRecuperacao = createServerFn({ method: "GET" }).handler(async () => {
+  const { temCodigoRecuperacao, usuarioDaSessao: sessao } = await import("./gate.server");
+  if ((await sessao()) === null) return { existe: false };
+  return { existe: await temCodigoRecuperacao() };
+});
+
+const recuperarSchema = z.object({
+  codigo: z.string().trim().min(8, "Informe o código secreto.").max(40),
+  novoUsuario: z.string().trim().min(3, "O novo login deve ter ao menos 3 caracteres.").max(60),
+  novaSenha: z.string().min(6, "A nova senha deve ter ao menos 6 caracteres.").max(200),
+});
+
+export const recuperarComCodigo = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => data)
+  .handler(async ({ data }) => {
+    const parsed = recuperarSchema.safeParse(data);
+    if (!parsed.success) {
+      return { ok: false as const, erro: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+    }
+    const { usarCodigoRecuperacao } = await import("./gate.server");
+    const usuarioAntigo = await usarCodigoRecuperacao(parsed.data.codigo);
+    if (usuarioAntigo === null) return { ok: false as const, erro: "Código secreto inválido." };
+    await salvarCredenciais(parsed.data.novoUsuario, parsed.data.novaSenha);
+    await migrarCartoes(usuarioAntigo, parsed.data.novoUsuario.trim());
+    const session = await abrirSessao();
+    await session.update({ unlocked: true, user: parsed.data.novoUsuario.trim() });
+    return { ok: true as const, erro: undefined };
+  });
