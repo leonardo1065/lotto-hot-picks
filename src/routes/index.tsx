@@ -615,6 +615,7 @@ function Index() {
   };
 
   const removerCartoes = async (id: string) => {
+    if (typeof window !== "undefined" && !window.confirm("Excluir este lote de cartões salvos?")) return;
     try {
       await removerNuvem({ data: { id } });
       await recarregarSalvos();
@@ -1529,7 +1530,22 @@ function Index() {
 
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="text-sm">
-            <span className="block text-[11px] text-muted-foreground">Concurso (vazio = último)</span>
+            <span className="block text-[11px] text-muted-foreground">Escolher concurso</span>
+            <select
+              value={concursoAlvo}
+              onChange={(e) => setConcursoAlvo(e.target.value)}
+              className="mt-1 w-56 rounded-xl border border-border bg-secondary px-3 py-2 text-foreground"
+            >
+              <option value="">Último concurso</option>
+              {concursos.map((c) => (
+                <option key={c.concurso} value={String(c.concurso)}>
+                  #{c.concurso} · {c.data}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            <span className="block text-[11px] text-muted-foreground">Ou digite o número</span>
             <input
               value={concursoAlvo}
               onChange={(e) => setConcursoAlvo(e.target.value.replace(/\D/g, ""))}
@@ -1597,10 +1613,22 @@ function Index() {
                   </label>
                   <button
                     onClick={() => removerCartoes(c.id)}
-                    className="text-xs text-muted-foreground underline"
+                    className="rounded-full border border-destructive px-3 py-1 text-xs text-destructive"
                   >
-                    remover
+                    Excluir
                   </button>
+                  <details className="w-full">
+                    <summary className="cursor-pointer text-xs text-muted-foreground">
+                      Ver dezenas dos cartões
+                    </summary>
+                    <ol className="mt-2 space-y-1 font-mono text-xs">
+                      {c.jogos.map((j, i) => (
+                        <li key={i}>
+                          {i + 1}. {[...j].sort((a, b) => a - b).map((n) => String(n).padStart(2, "0")).join(" ")}
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
                 </li>
               ))}
             </ul>
