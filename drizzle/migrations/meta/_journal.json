@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791041637242,
+      "tag": "0000_codigo_recuperacao",
+      "breakpoints": true
+    }
+  ]
+}
