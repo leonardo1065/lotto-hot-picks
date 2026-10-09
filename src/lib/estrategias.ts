@@ -309,3 +309,64 @@ export function avaliarCartoes(
     score: chance11 * 0.5 + chance13 * 3 + chance14 * 8,
   };
 }
+
+/**
+ * Gera variações ancoradas no palpite estatístico (15 dezenas sugeridas):
+ * mantém a maior parte das dezenas do palpite e troca poucas (2 a 4) por
+ * dezenas ativas fora do palpite, ponderadas pelo ranking dinâmico.
+ */
+export function gerarCartoesDoPalpite({
+  palpite,
+  ranking,
+  ativas,
+  qtd,
+  criterios,
+}: {
+  palpite: number[];
+  ranking: ItemRanking[];
+  ativas: number[];
+  qtd: number;
+  criterios: Criterios;
+}): number[][] {
+  if (palpite.length !== 15) return [];
+  const base = [...palpite].sort((a, b) => a - b);
+  const fora = ativas.filter((n) => !base.includes(n));
+  const pesoDe = new Map(ranking.map((r) => [r.n, r.freq]));
+  const poolFora = fora.map((n) => ({ n, peso: 1 + (pesoDe.get(n) ?? 0) * 4 }));
+
+  const vistas = new Set<string>([base.join("-")]);
+  const novas: number[][] = [];
+  const limite = qtd * 300;
+  let tentativas = 0;
+
+  while (novas.length < qtd && tentativas < limite) {
+    tentativas++;
+    const relaxado = tentativas > qtd * 200;
+    // quantas dezenas do palpite serão trocadas neste cartão (0 a 4)
+    const trocas = Math.min(
+      poolFora.length,
+      tentativas % 7 === 0 ? 0 : 2 + Math.floor(Math.random() * 3),
+    );
+    const set = new Set(base);
+    if (trocas > 0) {
+      const saidas = [...base].sort(() => Math.random() - 0.5).slice(0, trocas);
+      for (const s of saidas) set.delete(s);
+      for (const e of sortearPonderado(poolFora, trocas)) set.add(e);
+    }
+    if (set.size !== 15) continue;
+    const lista = [...set].sort((a, b) => a - b);
+    const chave = lista.join("-");
+    if (vistas.has(chave)) continue;
+    if (!relaxado && !validarCombinacao(lista, criterios).ok) continue;
+    if (!relaxado) {
+      const repetido = novas.some(
+        (j) => j.filter((n) => set.has(n)).length > criterios.maxRepeticaoEntreCartoes,
+      );
+      if (repetido) continue;
+    }
+    vistas.add(chave);
+    novas.push(lista);
+  }
+
+  return novas;
+}
