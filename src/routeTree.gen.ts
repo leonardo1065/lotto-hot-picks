@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AlterarSenhaRouteImport } from './routes/alterar-senha'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MeusJogosRouteImport } from './routes/meus-jogos'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeusJogosRoute = MeusJogosRouteImport.update({
+  id: '/meus-jogos',
+  path: '/meus-jogos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alterar-senha': typeof AlterarSenhaRoute
   '/login': typeof LoginRoute
+  '/meus-jogos': typeof MeusJogosRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alterar-senha': typeof AlterarSenhaRoute
   '/login': typeof LoginRoute
+  '/meus-jogos': typeof MeusJogosRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,28 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/alterar-senha': typeof AlterarSenhaRoute
   '/login': typeof LoginRoute
+  '/meus-jogos': typeof MeusJogosRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/alterar-senha' | '/login' | '/sitemap.xml'
+  fullPaths: '/' | '/alterar-senha' | '/login' | '/meus-jogos' | '/sitemap.xml'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/alterar-senha' | '/login' | '/sitemap.xml'
-  id: '__root__' | '/' | '/alterar-senha' | '/login' | '/sitemap.xml'
+  to: '/' | '/alterar-senha' | '/login' | '/meus-jogos' | '/sitemap.xml'
+  id:
+    | '__root__'
+    | '/'
+    | '/alterar-senha'
+    | '/login'
+    | '/meus-jogos'
+    | '/sitemap.xml'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlterarSenhaRoute: typeof AlterarSenhaRoute
   LoginRoute: typeof LoginRoute
+  MeusJogosRoute: typeof MeusJogosRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
@@ -92,6 +108,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/meus-jogos': {
+      id: '/meus-jogos'
+      path: '/meus-jogos'
+      fullPath: '/meus-jogos'
+      preLoaderRoute: typeof MeusJogosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -106,6 +129,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlterarSenhaRoute: AlterarSenhaRoute,
   LoginRoute: LoginRoute,
+  MeusJogosRoute: MeusJogosRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
