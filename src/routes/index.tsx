@@ -787,6 +787,12 @@ function Index() {
           <p className="font-display text-sm tracking-[0.35em] text-accent">LOTOFÁCIL · CAIXA</p>
           <div className="flex items-center gap-2">
             <Link
+              to="/meus-jogos"
+              className="rounded-full border border-accent px-4 py-1.5 text-xs text-accent transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              Meus jogos
+            </Link>
+            <Link
               to="/alterar-senha"
               className="rounded-full border border-border px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
             >
