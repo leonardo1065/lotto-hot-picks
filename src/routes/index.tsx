@@ -14,6 +14,7 @@ import {
   ESTRATEGIAS,
   CRITERIOS_PADRAO,
   gerarCartoes,
+  gerarCartoesDoPalpite,
   avaliarCartoes,
   calcularPesosDinamicos,
   type Criterios,
@@ -2113,15 +2114,46 @@ function Index() {
             </p>
           </div>
 
-          <button
-            onClick={() => {
-              setGeradas(sugestaoEstrategica);
-              setGeradasEm(Date.now());
-            }}
-            className="mt-5 rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5"
-          >
-            Usar esta estratégia
-          </button>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => {
+                setGeradas(sugestaoEstrategica);
+                setGeradasEm(Date.now());
+              }}
+              className="rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5"
+            >
+              Usar esta estratégia
+            </button>
+            <button
+              onClick={() => {
+                if (!concursos.length) {
+                  setErro("Aguarde o carregamento dos concursos da Caixa.");
+                  return;
+                }
+                setErro(null);
+                const novas = gerarCartoesDoPalpite({
+                  palpite: sugestaoEstrategica,
+                  ranking: rankingDinamico,
+                  ativas,
+                  qtd: qtdApostas,
+                  criterios,
+                });
+                if (!novas.length) {
+                  setErro("Não foi possível gerar variações do palpite com os critérios atuais.");
+                  return;
+                }
+                setApostas(novas);
+                setGeradoEm(Date.now());
+              }}
+              className="rounded-full border-2 border-primary bg-primary/10 px-6 py-3 font-display text-xl tracking-wide text-primary transition-transform hover:-translate-y-0.5"
+            >
+              Gerar {qtdApostas} cartões a partir do palpite
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Os cartões mantêm a maior parte das 15 dezenas do palpite e trocam poucas dezenas,
+            seguindo os pesos das estatísticas e os seus critérios de validação.
+          </p>
         </section>
       )}
 
