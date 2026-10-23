@@ -135,6 +135,28 @@ function Index() {
   const [ativas, setAtivas] = useState<number[]>(TODAS);
   const [escolhidas, setEscolhidas] = useState<number[]>([]);
   const [modoEscolha, setModoEscolha] = useState(false);
+  type GrupoSalvo = { id: string; nome: string; dezenas: number[]; criadoEm: number };
+  const [grupos, setGrupos] = useState<GrupoSalvo[]>([]);
+  const [gruposCarregados, setGruposCarregados] = useState(false);
+  const [nomeGrupo, setNomeGrupo] = useState("");
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("lotofacil:grupos");
+      if (raw) setGrupos(JSON.parse(raw));
+    } catch {}
+    setGruposCarregados(true);
+  }, []);
+  useEffect(() => {
+    if (gruposCarregados) localStorage.setItem("lotofacil:grupos", JSON.stringify(grupos));
+  }, [grupos, gruposCarregados]);
+  const salvarGrupo = () => {
+    if (!escolhidas.length) return;
+    const nome = nomeGrupo.trim() || `Grupo ${grupos.length + 1}`;
+    setGrupos((prev) =>
+      [{ id: crypto.randomUUID(), nome, dezenas: escolhidas, criadoEm: Date.now() }, ...prev].slice(0, 50),
+    );
+    setNomeGrupo("");
+  };
   const [historicoAtivas, setHistoricoAtivas] = useState<number[][]>([]);
   const [geradas, setGeradas] = useState<number[]>([]);
   const [qtdApostas, setQtdApostas] = useState(15);
@@ -316,6 +338,39 @@ function Index() {
     [rankingDinamico, rankingAtraso],
   );
 
+  const faixaDe = useMemo(
+    () => new Map(perfilDinamico.itens.map((i) => [i.n, i.faixa])),
+    [perfilDinamico],
+  );
+
+  const perfilEscolhidas = useMemo(() => {
+    const e = escolhidas;
+    const primosL = [2, 3, 5, 7, 11, 13, 17, 19, 23];
+    const molduraL = [1, 2, 3, 4, 5, 6, 10, 11, 15, 16, 20, 21, 22, 23, 24, 25];
+    const pares = e.filter((n) => n % 2 === 0).length;
+    const moldura = e.filter((n) => molduraL.includes(n)).length;
+    const total = Math.max(1, concursos.length);
+    const media = e.length
+      ? Math.round(
+          (e.reduce((s, n) => s + (concursos.filter((c) => c.dezenas.includes(n)).length / total), 0) /
+            e.length) *
+            100,
+        )
+      : 0;
+    return {
+      pares,
+      impares: e.length - pares,
+      primos: e.filter((n) => primosL.includes(n)).length,
+      moldura,
+      miolo: e.length - moldura,
+      soma: e.reduce((a, b) => a + b, 0),
+      quentes: e.filter((n) => faixaDe.get(n) === "quentes").length,
+      mornas: e.filter((n) => faixaDe.get(n) === "mornas").length,
+      frias: e.filter((n) => faixaDe.get(n) === "frias").length,
+      media,
+    };
+  }, [escolhidas, concursos, faixaDe]);
+
   const sugestaoEstrategica = useMemo(() => {
     if (!concursos.length) return [] as number[];
     const permitidas = new Set(ativas);
@@ -445,15 +500,38 @@ function Index() {
       return;
     }
     setErro(null);
+    const fixasUsar = escolhidas.length <= 15 ? escolhidas : [];
     const top = [
-      ...escolhidas,
+      ...fixasUsar,
       ...[...ativas]
-        .filter((n) => !escolhidas.includes(n))
+        .filter((n) => !fixasUsar.includes(n))
         .sort((a, b) => (frequencias.get(b) ?? 0) - (frequencias.get(a) ?? 0) || a - b),
     ]
       .slice(0, 15)
       .sort((a, b) => a - b);
     setGeradas(top);
+    setGeradasEm(Date.now());
+  };
+
+  const porFrequencia = (lista: number[]) =>
+    [...lista].sort((a, b) => (frequencias.get(b) ?? 0) - (frequencias.get(a) ?? 0) || a - b);
+
+  const gerarDasEscolhidas = () => {
+    if (!escolhidas.length) {
+      setErro("Marque suas dezenas com ★ primeiro.");
+      return;
+    }
+    setErro(null);
+    // usa as escolhidas mais fortes; se forem menos de 15, completa com as mais sorteadas
+    const base = porFrequencia(escolhidas).slice(0, 15);
+    const resto = porFrequencia(TODAS.filter((n) => !base.includes(n)));
+    setGeradas([...base, ...resto].slice(0, 15).sort((a, b) => a - b));
+    setGeradasEm(Date.now());
+  };
+
+  const gerarComTodas = () => {
+    setErro(null);
+    setGeradas(porFrequencia(TODAS).slice(0, 15).sort((a, b) => a - b));
     setGeradasEm(Date.now());
   };
 
@@ -467,11 +545,12 @@ function Index() {
       return;
     }
     setErro(null);
+    const grupoGrande = escolhidas.length > 15;
     const novas = gerarCartoes({
       ranking: rankingDinamico,
       rankingAtraso,
-      ativas,
-      fixas: escolhidas,
+      ativas: grupoGrande ? escolhidas : ativas,
+      fixas: grupoGrande ? [] : escolhidas,
       estrategia: estrategiaGeracao,
       qtd: qtdApostas,
       criterios,
@@ -891,8 +970,10 @@ function Index() {
           </button>
           <span className="text-muted-foreground">
             {escolhidas.length
-              ? `${escolhidas.length} escolhida(s) — entram em todos os jogos gerados`
-              : "Toque no botão e marque 2 ou mais dezenas (até 15) que devem estar em todos os jogos."}
+              ? escolhidas.length <= 15
+                ? `${escolhidas.length} escolhida(s) — entram em todos os jogos gerados`
+                : `${escolhidas.length} escolhidas — os jogos saem só de dentro do seu grupo`
+              : "Toque no botão e marque as dezenas da sua escolha (2 a 25)."}
           </span>
           {escolhidas.length > 0 && (
             <button
@@ -903,6 +984,112 @@ function Index() {
             </button>
           )}
         </div>
+
+        {escolhidas.length > 0 && (
+          <div className="mt-3 rounded-xl border border-accent/60 bg-card p-4 text-sm">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Minhas dezenas escolhidas ({escolhidas.length})
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {escolhidas.map((n) => {
+                const faixa = faixaDe.get(n);
+                return (
+                  <span
+                    key={n}
+                    title={faixa}
+                    className={`grid h-10 w-10 place-items-center rounded-full font-display text-lg ring-2 ${
+                      faixa === "quentes"
+                        ? "bg-hot text-primary-foreground ring-hot"
+                        : faixa === "frias"
+                          ? "bg-secondary text-foreground ring-border"
+                          : "bg-accent text-accent-foreground ring-accent"
+                    }`}
+                  >
+                    {String(n).padStart(2, "0")}
+                  </span>
+                );
+              })}
+            </div>
+            <div className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Perfil das dezenas
+            </div>
+            <dl className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {[
+                ["Pares / ímpares", `${perfilEscolhidas.pares} / ${perfilEscolhidas.impares}`],
+                ["Primos", perfilEscolhidas.primos],
+                ["Moldura / miolo", `${perfilEscolhidas.moldura} / ${perfilEscolhidas.miolo}`],
+                ["Soma", perfilEscolhidas.soma],
+                ["Quentes", perfilEscolhidas.quentes],
+                ["Mornas", perfilEscolhidas.mornas],
+                ["Frias", perfilEscolhidas.frias],
+                ["Saída média", `${perfilEscolhidas.media}%`],
+              ].map(([k, v]) => (
+                <div key={String(k)} className="rounded-lg bg-secondary/50 p-2">
+                  <dt className="text-[11px] text-muted-foreground">{k}</dt>
+                  <dd className="font-display text-lg">{v}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-2 text-xs text-muted-foreground">
+              "Saída média" = quantas vezes, em média, cada dezena do grupo saiu nos concursos analisados.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                value={nomeGrupo}
+                onChange={(e) => setNomeGrupo(e.target.value)}
+                placeholder="Nome do grupo (opcional)"
+                className="rounded-full border border-border bg-background px-3 py-1.5"
+              />
+              <button
+                onClick={salvarGrupo}
+                className="rounded-full bg-primary px-4 py-1.5 font-semibold text-primary-foreground"
+              >
+                Salvar grupo
+              </button>
+            </div>
+          </div>
+        )}
+
+        {grupos.length > 0 && (
+          <div className="mt-3 rounded-xl border border-border bg-secondary/30 p-4 text-sm">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Meus grupos salvos
+            </div>
+            <ul className="mt-2 space-y-2">
+              {grupos.map((g) => (
+                <li key={g.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-card p-2">
+                  <span className="font-semibold">{g.nome}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(g.criadoEm).toLocaleString("pt-BR")}
+                  </span>
+                  <span className="font-mono text-xs">
+                    {g.dezenas.map((n) => String(n).padStart(2, "0")).join(" ")}
+                  </span>
+                  <span className="ml-auto flex gap-2">
+                    <button
+                      onClick={() => {
+                        setEscolhidas(g.dezenas);
+                        setAtivas((prev) => [...new Set([...prev, ...g.dezenas])].sort((a, b) => a - b));
+                      }}
+                      className="rounded-full border border-primary px-3 py-1 text-primary hover:bg-primary hover:text-primary-foreground"
+                    >
+                      Usar
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Excluir o grupo "${g.nome}"?`))
+                          setGrupos((prev) => prev.filter((x) => x.id !== g.id));
+                      }}
+                      className="rounded-full border border-destructive px-3 py-1 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    >
+                      Excluir
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-7">
           {TODAS.map((n) => {
@@ -917,7 +1104,7 @@ function Index() {
                   setEscolhidas((prev) =>
                     prev.includes(n)
                       ? prev.filter((x) => x !== n)
-                      : prev.length >= 15
+                      : prev.length >= 25
                         ? prev
                         : [...prev, n].sort((a, b) => a - b),
                   );
@@ -960,6 +1147,20 @@ function Index() {
             className="rounded-full bg-primary px-6 py-3 font-display text-xl tracking-wide text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
           >
             {isFetching ? "Buscando na Caixa..." : "Gerar 15 dezenas"}
+          </button>
+          <button
+            onClick={gerarDasEscolhidas}
+            disabled={isFetching || escolhidas.length === 0}
+            className="rounded-full bg-accent px-6 py-3 font-display text-xl tracking-wide text-accent-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+          >
+            ★ Gerar 15 das minhas escolhidas
+          </button>
+          <button
+            onClick={gerarComTodas}
+            disabled={isFetching}
+            className="rounded-full border border-primary px-6 py-3 font-display text-xl tracking-wide text-primary transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-60"
+          >
+            Gerar com todas as 25
           </button>
           <button
             onClick={zerar}
