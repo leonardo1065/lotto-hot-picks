@@ -133,6 +133,8 @@ function Index() {
   const buscar = useServerFn(buscarConcursos);
   const [quantidade, setQuantidade] = useState(20);
   const [ativas, setAtivas] = useState<number[]>(TODAS);
+  const [escolhidas, setEscolhidas] = useState<number[]>([]);
+  const [modoEscolha, setModoEscolha] = useState(false);
   const [historicoAtivas, setHistoricoAtivas] = useState<number[][]>([]);
   const [geradas, setGeradas] = useState<number[]>([]);
   const [qtdApostas, setQtdApostas] = useState(15);
@@ -381,6 +383,7 @@ function Index() {
           ranking: rankingDinamico,
           rankingAtraso,
           ativas,
+          fixas: escolhidas,
           estrategia: e.id,
           qtd,
           criterios,
@@ -442,8 +445,12 @@ function Index() {
       return;
     }
     setErro(null);
-    const top = [...ativas]
-      .sort((a, b) => (frequencias.get(b) ?? 0) - (frequencias.get(a) ?? 0) || a - b)
+    const top = [
+      ...escolhidas,
+      ...[...ativas]
+        .filter((n) => !escolhidas.includes(n))
+        .sort((a, b) => (frequencias.get(b) ?? 0) - (frequencias.get(a) ?? 0) || a - b),
+    ]
       .slice(0, 15)
       .sort((a, b) => a - b);
     setGeradas(top);
@@ -464,6 +471,7 @@ function Index() {
       ranking: rankingDinamico,
       rankingAtraso,
       ativas,
+      fixas: escolhidas,
       estrategia: estrategiaGeracao,
       qtd: qtdApostas,
       criterios,
@@ -868,6 +876,33 @@ function Index() {
           <span className="text-xs text-muted-foreground">{ativas.length} ativas</span>
         </div>
 
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-secondary/40 p-3 text-sm">
+          <button
+            onClick={() => setModoEscolha((v) => !v)}
+            aria-pressed={modoEscolha}
+            className={`rounded-full px-4 py-2 font-semibold transition-colors ${
+              modoEscolha
+                ? "bg-accent text-accent-foreground ring-2 ring-accent"
+                : "border border-border bg-card text-foreground hover:border-primary"
+            }`}
+          >
+            {modoEscolha ? "✓ Escolhendo minhas dezenas" : "Escolher minhas dezenas"}
+          </button>
+          <span className="text-muted-foreground">
+            {escolhidas.length
+              ? `${escolhidas.length} escolhida(s) — entram em todos os jogos gerados`
+              : "Toque no botão e marque 2 ou mais dezenas (até 15) que devem estar em todos os jogos."}
+          </span>
+          {escolhidas.length > 0 && (
+            <button
+              onClick={() => setEscolhidas([])}
+              className="rounded-full border border-destructive px-3 py-1 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              Limpar escolhidas
+            </button>
+          )}
+        </div>
+
         <div className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-7">
           {TODAS.map((n) => {
             const ativa = ativas.includes(n);
@@ -876,8 +911,18 @@ function Index() {
             return (
               <button
                 key={n}
-                onClick={() => alternar(n)}
-                aria-pressed={ativa}
+                onClick={() => {
+                  if (!modoEscolha) return alternar(n);
+                  setEscolhidas((prev) =>
+                    prev.includes(n)
+                      ? prev.filter((x) => x !== n)
+                      : prev.length >= 15
+                        ? prev
+                        : [...prev, n].sort((a, b) => a - b),
+                  );
+                  if (!ativas.includes(n)) setAtivas((prev) => [...prev, n].sort((a, b) => a - b));
+                }}
+                aria-pressed={modoEscolha ? escolhidas.includes(n) : ativa}
                 className={`ball-base relative w-full border text-2xl ${
                   ativa
                     ? "border-primary/60 bg-primary text-primary-foreground shadow-ball hover:-translate-y-0.5"
@@ -892,6 +937,11 @@ function Index() {
                 }
               >
                 {String(n).padStart(2, "0")}
+                {escolhidas.includes(n) && (
+                  <span className="absolute -top-1 -left-1 rounded-full bg-accent px-1.5 text-[10px] font-bold text-accent-foreground ring-2 ring-background">
+                    ★
+                  </span>
+                )}
                 {concursos.length > 0 && (
                   <span className="absolute -bottom-1 right-0 rounded-full bg-background px-1.5 text-[10px] font-semibold text-foreground">
                     {freq}

@@ -154,6 +154,8 @@ export type EntradaGeracao = {
   estrategia: Estrategia;
   qtd: number;
   criterios: Criterios;
+  /** dezenas escolhidas pelo usuário que entram em todos os cartões */
+  fixas?: number[];
 };
 
 export function gerarCartoes({
@@ -163,7 +165,9 @@ export function gerarCartoes({
   estrategia,
   qtd,
   criterios,
+  fixas = [],
 }: EntradaGeracao): number[][] {
+  const obrigatorias = [...new Set(fixas)].slice(0, 15);
   const permitidas = new Set(ativas);
   const perfil = calcularPesosDinamicos(ranking, rankingAtraso);
   const poolDe = (faixa?: FaixaDinamica) =>
@@ -236,7 +240,10 @@ export function gerarCartoes({
   while (novas.length < qtd && tentativas < limite) {
     tentativas++;
     const relaxado = tentativas > qtd * 200;
-    const set = montar();
+    const base = montar();
+    const set = new Set<number>(obrigatorias);
+    for (const n of base) if (set.size < 15) set.add(n);
+    completar(set);
     if (set.size < 15) continue;
     const lista = [...set].slice(0, 15).sort((a, b) => a - b);
     const chave = lista.join("-");
