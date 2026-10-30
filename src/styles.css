@@ -95,3 +95,10 @@
   letter-spacing: 0.05em;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
+
+/* Hide the complete Lovable branding widget on every page. */
+#lovable-badge {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
