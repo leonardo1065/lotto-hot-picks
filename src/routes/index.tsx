@@ -2,6 +2,7 @@ import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-rout
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { MegaSena } from "@/components/MegaSena";
 import { buscarConcursos, buscarConcurso, type ConcursoResultado } from "@/lib/lotofacil.functions";
 import { exigirAcesso, sair } from "@/lib/gate.functions";
 import {
@@ -130,6 +131,7 @@ type CartoesSalvos = LoteCartoes;
 
 
 function Index() {
+  const [modalidade, setModalidade] = useState<"loto" | "mega">("loto");
   const buscar = useServerFn(buscarConcursos);
   const [quantidade, setQuantidade] = useState(20);
   const [ativas, setAtivas] = useState<number[]>(TODAS);
@@ -867,6 +869,8 @@ function Index() {
     };
   }, [concursos, ranking]);
 
+  if (modalidade === "mega") return <MegaSena onVoltar={() => setModalidade("loto")} />;
+
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
       <main className="mx-auto w-full max-w-3xl px-5 py-10">
@@ -875,6 +879,7 @@ function Index() {
         <div className="flex items-start justify-between gap-3">
           <p className="font-display text-sm tracking-[0.35em] text-accent">LOTOFÁCIL · CAIXA</p>
           <div className="flex items-center gap-2">
+            <button onClick={() => setModalidade("mega")} className="rounded-full border border-primary px-4 py-1.5 text-xs text-primary transition-colors hover:bg-primary hover:text-primary-foreground">Mega-Sena</button>
             <Link
               to="/meus-jogos"
               className="rounded-full border border-accent px-4 py-1.5 text-xs text-accent transition-colors hover:bg-accent hover:text-accent-foreground"
